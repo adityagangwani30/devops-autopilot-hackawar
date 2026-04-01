@@ -2,7 +2,66 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { CostMetricsDisplay } from "@/components/CostMetricsDisplay"
 import "./dashboard.css"
+
+// Types for cost data
+interface CostMetric {
+  repo_name: string
+  deployed_env: string
+  criticality_tier: string
+  monthly_cost_usd: number
+  unit_economics: { monthly_active_users: number; cost_per_1k_users: number }
+  infrastructure?: { provider: string; provisioned_compute: string; avg_cpu_percent: number; peak_cpu_percent: number }
+  storage?: { allocated_gb: number; used_gb: number; last_accessed_days_ago: number }
+}
+
+interface CostAnalysis {
+  metrics: CostMetric[]
+  totalCost: number
+  repoCount: number
+  avgCostPerRepo: number
+  recommendations: Array<{ type: string; severity: string; repo: string; message: string }>
+  healthScore: number
+  error: string | null
+}
+
+// Process raw metrics into analysis (client-side but only runs once)
+function processMetrics(metrics: CostMetric[]): CostAnalysis {
+  if (!metrics.length) {
+    return { metrics: [], totalCost: 0, repoCount: 0, avgCostPerRepo: 0, recommendations: [], healthScore: 100, error: "No data" }
+  }
+
+  const totalCost = metrics.reduce((sum, m) => sum + m.monthly_cost_usd, 0)
+  const recommendations: Array<{ type: string; severity: string; repo: string; message: string }> = []
+
+  for (const m of metrics) {
+    if (m.infrastructure) {
+      const avgCpu = m.infrastructure.avg_cpu_percent
+      if (avgCpu < 20 && m.monthly_cost_usd > 300) {
+        recommendations.push({ type: "right-size", severity: "high", repo: m.repo_name, message: `Low CPU (${avgCpu}%)` })
+      }
+    }
+    if (m.storage && m.storage.last_accessed_days_ago > 30) {
+      recommendations.push({ type: "zombie", severity: "medium", repo: m.repo_name, message: `Storage unused ${m.storage.last_accessed_days_ago} days` })
+    }
+    if (m.unit_economics.cost_per_1k_users > 500 && m.unit_economics.monthly_active_users < 100) {
+      recommendations.push({ type: "inefficient", severity: "medium", repo: m.repo_name, message: `High cost/user $${m.unit_economics.cost_per_1k_users.toFixed(2)}/1K` })
+    }
+  }
+
+  const healthScore = Math.max(0, 100 - recommendations.filter(r => r.severity === "high").length * 20)
+
+  return {
+    metrics,
+    totalCost,
+    repoCount: metrics.length,
+    avgCostPerRepo: totalCost / metrics.length,
+    recommendations,
+    healthScore,
+    error: null,
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Dashboard Page – React conversion of dashboard.html
@@ -212,7 +271,49 @@ function FreqBar({
 export default function DashboardPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [contextBarWidth, setContextBarWidth] = useState(0)
-  const [chatState, setChatState] = useState<"idle" | "approved" | "rejected">("idle")
+  const [costAnalysis, setCostAnalysis] = useState<CostAnalysis | null>(null)
+
+  // Fetch cost data once on mount - no infinite loop
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch("/api/cost-metrics")
+        if (!res.ok) {
+          console.error("[Cost Dashboard] API returned error:", res.status, res.statusText)
+          setCostAnalysis({ metrics: [], totalCost: 0, repoCount: 0, avgCostPerRepo: 0, recommendations: [], healthScore: 100, error: "API error" })
+          return
+        }
+        const data = await res.json()
+        console.log("[Cost Dashboard] Received data:", data)
+        
+        // API returns processed summary directly - transform to CostAnalysis format
+        if (data.top_cost_drivers && Array.isArray(data.top_cost_drivers)) {
+          setCostAnalysis({
+            metrics: data.top_cost_drivers.map((d: any) => ({
+              repo_name: d.repo_name,
+              deployed_env: d.environment,
+              criticality_tier: d.criticality_tier,
+              monthly_cost_usd: d.monthly_cost_usd,
+              unit_economics: { monthly_active_users: 0, cost_per_1k_users: 0 },
+            })),
+            totalCost: data.total_monthly_cost_usd || 0,
+            repoCount: data.repository_count || 0,
+            avgCostPerRepo: data.average_cost_per_repo || 0,
+            recommendations: data.recommendations || [],
+            healthScore: Math.max(0, 100 - (data.recommendations?.filter((r: any) => r.severity === "high").length || 0) * 20),
+            error: data.error || null,
+          })
+        } else {
+          console.error("[Cost Dashboard] Unexpected data format:", data)
+          setCostAnalysis({ metrics: [], totalCost: 0, repoCount: 0, avgCostPerRepo: 0, recommendations: [], healthScore: 100, error: "Invalid data" })
+        }
+      } catch (e) {
+        console.error("[Cost Dashboard] Fetch error:", e)
+        setCostAnalysis({ metrics: [], totalCost: 0, repoCount: 0, avgCostPerRepo: 0, recommendations: [], healthScore: 100, error: "Failed to load" })
+      }
+    }
+    fetchData()
+  }, [])
 
   const activeTasks = useCountAnimation(412)
   const costAvoided = useCountAnimation(18000)
@@ -511,6 +612,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* ── COST METRICS SECTION ── */}
+          <div className="dash-card dash-animate-in dash-delay-8" id="card-cost-metrics">
+            <div className="dash-card-header">
+              <span className="dash-card-title">Cost Optimization Metrics</span>
+              <span className="dash-card-badge">DEVOPS</span>
+            </div>
+            <div className="dash-card-body">
+              {costAnalysis ? (
+                <CostMetricsDisplay analysis={costAnalysis} />
+              ) : (
+                <div style={{ padding: "24px", textAlign: "center", color: "#64748b" }}>Loading cost data...</div>
+              )}
+            </div>
+          </div>
+
           {/* ── BOTTOM ROW: FREQ BARS ── */}
           <div className="bottom-row">
             {/* Agent Task Frequency */}
@@ -552,89 +668,6 @@ export default function DashboardPage() {
           </div>
         </section>
       </main>
-
-      {/* ═══ FLOATING CHAT PANEL ═══ */}
-      <div className="chat-panel" id="chat-panel">
-        <div className="chat-header">
-          <div className="ai-avatar">🤖</div>
-          <div>
-            <div className="chat-title">AI CTO · Live</div>
-            <div className="chat-subtitle">Autonomous DevOps Agent</div>
-          </div>
-          <div className="chat-status">
-            <span
-              className="dot"
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "#34D399",
-                boxShadow: "0 0 8px rgba(52,211,153,.5)",
-              }}
-            />
-            Online
-          </div>
-        </div>
-        <div className="chat-body">
-          <div className="chat-msg">
-            <div className="msg-avatar">🤖</div>
-            <div>
-              <div className="msg-bubble">
-                <strong>Deploy Gate — Auth-Service:</strong>
-                <br />
-                I recommend <strong>against</strong> this deploy.{" "}
-                <span className="alert-line">Three tests failing in a critical auth module.</span>{" "}
-                Override requires your explicit confirmation.
-                <br />
-                <br />
-                <span
-                  style={{
-                    color: "#64748B",
-                    fontSize: ".68rem",
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
-                >
-                  Risk Score:{" "}
-                  <span style={{ color: "#F87171", fontWeight: 700 }}>HIGH (0.91)</span> · Blast
-                  Radius: 12 services
-                </span>
-              </div>
-              <div className="msg-time">Today 10:14 AM · Agent v3.2.1</div>
-            </div>
-          </div>
-        </div>
-        <div className="chat-actions">
-          {chatState === "idle" && (
-            <>
-              <button
-                className="chat-btn reject"
-                onClick={() => setChatState("rejected")}
-              >
-                ✕ Reject Deploy
-              </button>
-              <button
-                className="chat-btn approve"
-                onClick={() => setChatState("approved")}
-              >
-                ✓ Approve Override
-              </button>
-            </>
-          )}
-          {chatState === "approved" && (
-            <button className="chat-btn approve" style={{ opacity: 0.6, pointerEvents: "none" }}>
-              ✓ Override Approved
-            </button>
-          )}
-          {chatState === "rejected" && (
-            <button
-              className="chat-btn reject"
-              style={{ background: "rgba(248,113,113,.15)", pointerEvents: "none" }}
-            >
-              ✕ Deploy Rejected
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
+    "dev:mem": "set NODE_OPTIONS=--max-old-space-size=2048&& next dev --turbopack",
     "build": "next build",
     "preview": "node ../scripts/serve-static.mjs out 3000",
     "typecheck": "tsc --noEmit"
