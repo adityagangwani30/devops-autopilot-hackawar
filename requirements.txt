@@ -1,0 +1,6 @@
+google-generativeai
+requests
+typer
+pydantic
+pyyaml
+python-dotenv
