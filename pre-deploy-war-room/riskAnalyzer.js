@@ -105,4 +105,4 @@ async function analyzeRisk(payload) {
   };
 }
 
-module.exports = { analyzeRisk, calculateScore, getRiskLevel };
+module.exports = { analyzeRisk, calculateScore, getRiskLevel, getRecentFailures };
