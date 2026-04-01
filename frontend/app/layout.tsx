@@ -3,25 +3,7 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   title: "DevOps Autopilot - Your AI CTO",
-  description:
-    "An AI agent that observes your CI/CD pipeline, reasons about failures, and acts - diagnosed in seconds, fixed with one click, never blindly risky.",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
-  },
+  description: "An AI agent that observes your CI/CD pipeline, reasons about failures, and acts - diagnosed in seconds, fixed with one click, never blindly risky.",
 }
 
 export default function RootLayout({
@@ -31,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased bg-[#0a0a0a] text-white">{children}</body>
     </html>
   )
 }
