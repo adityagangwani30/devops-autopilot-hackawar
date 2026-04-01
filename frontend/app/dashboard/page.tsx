@@ -1,640 +1,393 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
-import "./dashboard.css"
+import { useEffect, useState } from "react"
+import { useSession } from "@/lib/use-session"
 
-/* ═══════════════════════════════════════════════════════════════
-   Dashboard Page – React conversion of dashboard.html
-   Route: /dashboard
-   ═══════════════════════════════════════════════════════════════ */
-
-// ── Data ──
-const freqData = [
-  { label: "git-commit-stream", value: 94 },
-  { label: "pr-review-queue", value: 87 },
-  { label: "deploy-monitor", value: 76 },
-  { label: "test-runner", value: 82 },
-  { label: "config-drift", value: 61 },
-  { label: "sla-watchdog", value: 73 },
-  { label: "cost-optimizer", value: 68 },
-  { label: "log-anomaly", value: 55 },
-]
-
-const healthData = [
-  { label: "CPU Utilization", value: 42, color: "#34D399" },
-  { label: "Memory Usage", value: 67, color: "#22D3EE" },
-  { label: "Disk I/O", value: 31, color: "#2DD4BF" },
-  { label: "Network Throughput", value: 58, color: "#A78BFA" },
-  { label: "Pod Count", value: 85, color: "#FB923C", suffix: "" },
-  { label: "Error Rate", value: 3, color: "#34D399" },
-  { label: "Latency P99", value: 22, color: "#2DD4BF" },
-  { label: "Queue Depth", value: 14, color: "#22D3EE" },
-]
-
-// ── Utility: Draw bar chart ──
-function drawBarChart(canvas: HTMLCanvasElement) {
-  const ctx = canvas.getContext("2d")
-  if (!ctx) return
-  const dpr = window.devicePixelRatio || 1
-
-  const rect = canvas.parentElement!.getBoundingClientRect()
-  canvas.width = rect.width * dpr
-  canvas.height = 240 * dpr
-  canvas.style.height = "240px"
-  ctx.scale(dpr, dpr)
-
-  const w = rect.width
-  const h = 240
-  const padding = { top: 20, right: 20, bottom: 44, left: 44 }
-  const chartW = w - padding.left - padding.right
-  const chartH = h - padding.top - padding.bottom
-
-  const categories = ["Observe", "Reason", "Propose Fix", "Pushback"]
-  const thisWeek = [64, 48, 37, 18]
-  const lastWeek = [52, 42, 29, 22]
-  const maxVal = Math.max(...thisWeek, ...lastWeek) * 1.15
-
-  const barGroupW = chartW / categories.length
-  const barW = barGroupW * 0.28
-  const gap = 4
-
-  // Grid lines
-  ctx.strokeStyle = "rgba(148,163,184,.08)"
-  ctx.lineWidth = 1
-  for (let i = 0; i <= 4; i++) {
-    const y = padding.top + (chartH / 4) * i
-    ctx.beginPath()
-    ctx.moveTo(padding.left, y)
-    ctx.lineTo(w - padding.right, y)
-    ctx.stroke()
-    ctx.fillStyle = "#64748B"
-    ctx.font = '10px "JetBrains Mono"'
-    ctx.textAlign = "right"
-    ctx.fillText(String(Math.round(maxVal - (maxVal / 4) * i)), padding.left - 8, y + 4)
-  }
-
-  // Bars
-  const roundedRect = (
-    c: CanvasRenderingContext2D,
-    x: number,
-    y: number,
-    w: number,
-    h: number,
-    r: number
-  ) => {
-    if (h <= 0) return
-    c.beginPath()
-    c.moveTo(x + r, y)
-    c.lineTo(x + w - r, y)
-    c.quadraticCurveTo(x + w, y, x + w, y + r)
-    c.lineTo(x + w, y + h)
-    c.lineTo(x, y + h)
-    c.lineTo(x, y + r)
-    c.quadraticCurveTo(x, y, x + r, y)
-    c.closePath()
-    c.fill()
-  }
-
-  categories.forEach((cat, i) => {
-    const x = padding.left + barGroupW * i + (barGroupW - barW * 2 - gap) / 2
-
-    const h1 = (lastWeek[i] / maxVal) * chartH
-    const grad1 = ctx.createLinearGradient(0, padding.top + chartH - h1, 0, padding.top + chartH)
-    grad1.addColorStop(0, "rgba(45,212,191,.25)")
-    grad1.addColorStop(1, "rgba(45,212,191,.08)")
-    ctx.fillStyle = grad1
-    roundedRect(ctx, x, padding.top + chartH - h1, barW, h1, 4)
-
-    const h2 = (thisWeek[i] / maxVal) * chartH
-    const grad2 = ctx.createLinearGradient(0, padding.top + chartH - h2, 0, padding.top + chartH)
-    grad2.addColorStop(0, "#2DD4BF")
-    grad2.addColorStop(1, "#22D3EE")
-    ctx.fillStyle = grad2
-    roundedRect(ctx, x + barW + gap, padding.top + chartH - h2, barW, h2, 4)
-
-    ctx.shadowColor = "rgba(45,212,191,.3)"
-    ctx.shadowBlur = 10
-    ctx.fillStyle = "rgba(45,212,191,.05)"
-    roundedRect(ctx, x + barW + gap, padding.top + chartH - h2, barW, h2, 4)
-    ctx.shadowColor = "transparent"
-    ctx.shadowBlur = 0
-
-    ctx.fillStyle = "#94A3B8"
-    ctx.font = '11px "Inter"'
-    ctx.textAlign = "center"
-    ctx.fillText(cat, x + barW + gap / 2, h - padding.bottom + 18)
-  })
-
-  // Legend
-  const legendX = w - padding.right - 140
-  const legendY = padding.top
-  ctx.fillStyle = "rgba(45,212,191,.15)"
-  roundedRect(ctx, legendX, legendY, 10, 10, 2)
-  ctx.fillStyle = "#64748B"
-  ctx.font = '10px "Inter"'
-  ctx.textAlign = "left"
-  ctx.fillText("Last Week", legendX + 16, legendY + 9)
-  const grad3 = ctx.createLinearGradient(legendX + 80, legendY, legendX + 90, legendY)
-  grad3.addColorStop(0, "#2DD4BF")
-  grad3.addColorStop(1, "#22D3EE")
-  ctx.fillStyle = grad3
-  roundedRect(ctx, legendX + 80, legendY, 10, 10, 2)
-  ctx.fillStyle = "#94A3B8"
-  ctx.fillText("This Week", legendX + 96, legendY + 9)
+interface GitHubOrg {
+  id: string
+  login: string
+  avatar_url: string
+  url: string
 }
 
-// ── Counting animation hook ──
-function useCountAnimation(target: number, duration = 1800) {
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    const startTime = performance.now()
-    let frame: number
-    function tick(now: number) {
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setValue(Math.round(target * eased))
-      if (progress < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [target, duration])
-  return value
+interface ConnectedOrg {
+  id: string
+  name: string
+  slug: string
+  githubOrgId: string
+  githubOrgAvatar?: string
+  connectedAt: string
+  role: string
 }
 
-// ── Bar fill component ──
-function FreqBar({
-  label,
-  value,
-  index,
-  customColor,
-  suffix = "%",
-}: {
-  label: string
-  value: number
-  index: number
-  customColor?: string
-  suffix?: string
-}) {
-  const [width, setWidth] = useState(0)
-  useEffect(() => {
-    const t = setTimeout(() => setWidth(value), 800 + index * 80)
-    return () => clearTimeout(t)
-  }, [value, index])
+const mockMetrics = [
+  { label: "Active Repos", value: "24", delta: "+3", trend: "up", color: "teal" },
+  { label: "Pipeline Runs", value: "1,284", delta: "+12%", trend: "up", color: "green" },
+  { label: "Success Rate", value: "94.2%", delta: "+2.1%", trend: "up", color: "cyan" },
+  { label: "Avg Build Time", value: "4m 32s", delta: "-18s", trend: "up", color: "purple" },
+]
 
-  const barStyle: React.CSSProperties = customColor
-    ? {
-        width: `${width}%`,
-        transitionDelay: `${index * 80}ms`,
-        background: `linear-gradient(90deg, ${customColor}, ${customColor}cc)`,
-        boxShadow: `0 0 14px ${customColor}40`,
+const mockActivity = [
+  { repo: "api-gateway", action: "Deploy succeeded", time: "2 min ago", status: "success" },
+  { repo: "frontend-app", action: "Build failed", time: "15 min ago", status: "error" },
+  { repo: "auth-service", action: "Pipeline triggered", time: "32 min ago", status: "pending" },
+  { repo: "data-processor", action: "Deploy succeeded", time: "1 hr ago", status: "success" },
+  { repo: "notification-svc", action: "Test passed", time: "2 hr ago", status: "success" },
+]
+
+export default function OverviewPage() {
+  const { session } = useSession()
+  const [githubOrgs, setGithubOrgs] = useState<GitHubOrg[]>([])
+  const [connectedOrgs, setConnectedOrgs] = useState<ConnectedOrg[]>([])
+  const [loadingOrgs, setLoadingOrgs] = useState(false)
+  const [connectingOrg, setConnectingOrg] = useState<string | null>(null)
+  const [showOrgPicker, setShowOrgPicker] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchConnectedOrgs()
+  }, [])
+
+  const fetchConnectedOrgs = async () => {
+    try {
+      const res = await fetch("/api/orgs")
+      if (res.ok) {
+        const data = await res.json()
+        setConnectedOrgs(data.organizations || [])
       }
-    : { width: `${width}%`, transitionDelay: `${index * 80}ms` }
+    } catch (err) {
+      console.error("Failed to fetch connected orgs:", err)
+    }
+  }
+
+  const fetchGitHubOrgs = async () => {
+    setLoadingOrgs(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/github/orgs")
+      if (!res.ok) {
+        throw new Error("Failed to fetch GitHub organizations")
+      }
+      const data = await res.json()
+      setGithubOrgs(data.organizations || [])
+      setShowOrgPicker(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+    } finally {
+      setLoadingOrgs(false)
+    }
+  }
+
+  const connectOrg = async (org: GitHubOrg) => {
+    setConnectingOrg(org.id)
+    setError(null)
+    try {
+      const res = await fetch("/api/orgs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          githubOrgId: org.id,
+          githubOrgName: org.login,
+          githubOrgAvatar: org.avatar_url,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || "Failed to connect organization")
+      }
+
+      setSuccess(`Successfully connected ${org.login}`)
+      setShowOrgPicker(false)
+      fetchConnectedOrgs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+    } finally {
+      setConnectingOrg(null)
+    }
+  }
+
+  const disconnectOrg = async (orgId: string) => {
+    try {
+      const res = await fetch(`/api/orgs/${orgId}`, { method: "DELETE" })
+      if (res.ok) {
+        setSuccess("Organization disconnected")
+        fetchConnectedOrgs()
+      }
+    } catch (err) {
+      setError("Failed to disconnect organization")
+    }
+  }
 
   return (
-    <div className="freq-item">
-      <span className="freq-label">{label}</span>
-      <div className="freq-bar-track">
-        <div className="freq-bar-fill" style={barStyle} />
-      </div>
-      <span className="freq-value" style={customColor ? { color: customColor } : undefined}>
-        {value}
-        {suffix}
-      </span>
-    </div>
-  )
-}
-
-// ══════════════════════════════════════════════════════════════
-//  MAIN DASHBOARD COMPONENT
-// ══════════════════════════════════════════════════════════════
-export default function DashboardPage() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [contextBarWidth, setContextBarWidth] = useState(0)
-  const [chatState, setChatState] = useState<"idle" | "approved" | "rejected">("idle")
-
-  const activeTasks = useCountAnimation(412)
-  const costAvoided = useCountAnimation(18000)
-
-  // Chart drawing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (canvasRef.current) drawBarChart(canvasRef.current)
-    }, 400)
-    const handleResize = () => {
-      if (canvasRef.current) drawBarChart(canvasRef.current)
-    }
-    window.addEventListener("resize", handleResize)
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener("resize", handleResize)
-    }
-  }, [])
-
-  // Context bar animation
-  useEffect(() => {
-    const t = setTimeout(() => setContextBarWidth(98), 600)
-    return () => clearTimeout(t)
-  }, [])
-
-  return (
-    <div className="dashboard-root">
-      {/* Google Fonts */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
-
-      {/* ═══ SIDEBAR ═══ */}
-      <aside className="dash-sidebar" id="sidebar">
-        <div className="sidebar-brand">
-          <div className="logo">DA</div>
-          <h1>
-            DevOps Autopilot <span>AI-Powered Platform</span>
-          </h1>
+    <>
+      <div className="dash-topbar">
+        <div className="topbar-left">
+          <h2>Overview</h2>
+          <p>Welcome back, {session?.user?.name || "User"} — here's what's happening today</p>
         </div>
-
-        <nav className="dash-sidebar-nav">
-          <div className="nav-label">Core</div>
-
-          <button className="dash-nav-item active" id="nav-agent-status">
-            <span className="icon">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.54-7.54-2.83 2.83M7.37 16.63l-2.83 2.83m14.92 0-2.83-2.83M7.37 7.37 4.54 4.54" />
-              </svg>
-            </span>
-            Agent Status
-            <span className="badge">Active</span>
+        <div className="topbar-right">
+          <button className="topbar-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 20V10M12 20V4M6 20v-6" />
+            </svg>
+            Export Report
           </button>
-
-          <button className="dash-nav-item" id="nav-live-chat">
-            <span className="icon">
-              <svg viewBox="0 0 24 24">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </span>
-            Live Chat Thread
-            <span className="badge warn">3</span>
+          <button className="topbar-btn primary" onClick={fetchGitHubOrgs} disabled={loadingOrgs}>
+            + {loadingOrgs ? "Loading..." : "Connect Repo"}
           </button>
-
-          <button className="dash-nav-item" id="nav-cicd">
-            <span className="icon">
-              <svg viewBox="0 0 24 24">
-                <polyline points="16 3 21 3 21 8" />
-                <line x1="4" y1="20" x2="21" y2="3" />
-                <polyline points="21 16 21 21 16 21" />
-                <line x1="15" y1="15" x2="21" y2="21" />
-                <line x1="4" y1="4" x2="9" y2="9" />
-              </svg>
-            </span>
-            CI/CD Observer
-          </button>
-
-          <button className="dash-nav-item" id="nav-context">
-            <span className="icon">
-              <svg viewBox="0 0 24 24">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                <line x1="12" y1="22.08" x2="12" y2="12" />
-              </svg>
-            </span>
-            Context Sources
-          </button>
-
-          <div className="nav-label">System</div>
-
-          <button className="dash-nav-item" id="nav-config">
-            <span className="icon">
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </span>
-            Config
-          </button>
-
-          <Link href="/" className="dash-nav-item" style={{ marginTop: "auto" }}>
-            <span className="icon">
-              <svg viewBox="0 0 24 24">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
-            </span>
-            Back to Home
-          </Link>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="avatar">OP</div>
-          <div className="user-info">
-            <div className="user-name">Ops Lead</div>
-            <div className="user-role">Platform Engineering</div>
-          </div>
-          <div className="status-dot" />
-        </div>
-      </aside>
-
-      {/* ═══ MAIN CONTENT ═══ */}
-      <main className="dash-main">
-        {/* Top bar */}
-        <header className="dash-topbar">
-          <div className="topbar-left">
-            <h2>Agent Command Center</h2>
-            <p>Real-time autonomous CI/CD intelligence · Last sync 4s ago</p>
-          </div>
-          <div className="topbar-right">
-            <button className="topbar-btn" id="btn-env">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-              </svg>
-              prod-us-east
-            </button>
-            <button className="topbar-btn primary" id="btn-deploy">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              Force Deploy
-            </button>
-          </div>
-        </header>
-
-        {/* Dashboard body */}
-        <section className="dash-content">
-          {/* ── TOP ROW: METRIC CARDS ── */}
-          <div className="metrics-row">
-            {/* Active Agent Tasks */}
-            <div className="dash-card metric-card teal dash-animate-in dash-delay-1 shimmer" id="card-active-tasks">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Active Agent Tasks</span>
-                <span className="dash-card-badge">LIVE</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="metric-value glow-text" style={{ color: "#2DD4BF" }}>
-                  {activeTasks.toLocaleString()}
-                </div>
-                <span className="metric-delta up">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                    <polyline points="17 6 23 6 23 12" />
-                  </svg>
-                  +12% from last week
-                </span>
-              </div>
-            </div>
-
-            {/* Live Cost Avoided */}
-            <div className="dash-card metric-card green dash-animate-in dash-delay-2 shimmer" id="card-cost-avoided">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Live Cost Avoided</span>
-                <span className="dash-card-badge">SAVINGS</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="metric-value glow-text" style={{ color: "#34D399" }}>
-                  ${costAvoided.toLocaleString()}
-                </div>
-                <div className="metric-sub">Avoided SLA penalties this cycle</div>
-              </div>
-            </div>
-
-            {/* Pipeline Status */}
-            <div className="dash-card metric-card purple dash-animate-in dash-delay-3 shimmer" id="card-pipeline-status">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Pipeline Status</span>
-                <span className="dash-card-badge">ALL CLEAR</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="metric-value" style={{ color: "#A78BFA", fontSize: "1.4rem", marginTop: "16px" }}>
-                  Monitoring Active
-                </div>
-                <div className="status-pill active">
-                  <span className="dot" />
-                  14 pipelines healthy
-                </div>
-              </div>
-            </div>
-
-            {/* Context Coverage */}
-            <div className="dash-card metric-card cyan dash-animate-in dash-delay-4 shimmer" id="card-context-coverage">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Context Coverage</span>
-                <span className="dash-card-badge">98%</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="metric-value glow-text" style={{ color: "#22D3EE" }}>
-                  98<span style={{ fontSize: "1.2rem", opacity: 0.6 }}>%</span>
-                </div>
-                <div className="metric-sub">Git integration depth</div>
-                <div className="mini-progress">
-                  <div className="fill" style={{ width: `${contextBarWidth}%` }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── MIDDLE ROW: TABLE + CHART ── */}
-          <div className="middle-row">
-            {/* Interventions table */}
-            <div className="dash-card dash-animate-in dash-delay-5" id="card-interventions">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Recent Agent Interventions</span>
-                <span className="dash-card-badge">LAST 24H</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="table-wrap">
-                  <table id="interventions-table">
-                    <thead>
-                      <tr>
-                        <th>Pipeline</th>
-                        <th>Trigger Event</th>
-                        <th>Diagnosis</th>
-                        <th>Agent Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td>Auth-Service</td>
-                        <td>Deploy-Main</td>
-                        <td>High Blast Radius</td>
-                        <td><span className="tag pushback">Pushback</span></td>
-                      </tr>
-                      <tr>
-                        <td>Payment-GW</td>
-                        <td>PR-Merge #482</td>
-                        <td>Flaky Test Suite</td>
-                        <td><span className="tag fix">Auto-Fix</span></td>
-                      </tr>
-                      <tr>
-                        <td>User-Profile</td>
-                        <td>Canary-Release</td>
-                        <td>Latency Spike +40ms</td>
-                        <td><span className="tag observe">Observe</span></td>
-                      </tr>
-                      <tr>
-                        <td>Infra-Core</td>
-                        <td>Config-Drift</td>
-                        <td>Terraform Mismatch</td>
-                        <td><span className="tag fix">Auto-Fix</span></td>
-                      </tr>
-                      <tr>
-                        <td>API-Gateway</td>
-                        <td>Scale-Up</td>
-                        <td>CPU Spike &gt; 85%</td>
-                        <td><span className="tag alert">Alert</span></td>
-                      </tr>
-                      <tr>
-                        <td>ML-Pipeline</td>
-                        <td>Model-Retrain</td>
-                        <td>Data Skew Detected</td>
-                        <td><span className="tag pushback">Pushback</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Bar Chart */}
-            <div className="dash-card dash-animate-in dash-delay-6" id="card-action-chart">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Activity by Agent Action</span>
-                <span className="dash-card-badge">CORE LOOP</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="chart-container">
-                  <canvas ref={canvasRef} id="actionChart" height={240} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── BOTTOM ROW: FREQ BARS ── */}
-          <div className="bottom-row">
-            {/* Agent Task Frequency */}
-            <div className="dash-card dash-animate-in dash-delay-7" id="card-task-freq">
-              <div className="dash-card-header">
-                <span className="dash-card-title">Agent Task Frequency</span>
-                <span className="dash-card-badge">STREAMS</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="freq-list">
-                  {freqData.map((d, i) => (
-                    <FreqBar key={d.label} label={d.label} value={d.value} index={i} />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* System Health Overview */}
-            <div className="dash-card dash-animate-in dash-delay-7" id="card-system-health">
-              <div className="dash-card-header">
-                <span className="dash-card-title">System Health Overview</span>
-                <span className="dash-card-badge">REAL-TIME</span>
-              </div>
-              <div className="dash-card-body">
-                <div className="freq-list">
-                  {healthData.map((d, i) => (
-                    <FreqBar
-                      key={d.label}
-                      label={d.label}
-                      value={d.value}
-                      index={i}
-                      customColor={d.color}
-                      suffix={d.suffix !== undefined ? d.suffix : "%"}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* ═══ FLOATING CHAT PANEL ═══ */}
-      <div className="chat-panel" id="chat-panel">
-        <div className="chat-header">
-          <div className="ai-avatar">🤖</div>
-          <div>
-            <div className="chat-title">AI CTO · Live</div>
-            <div className="chat-subtitle">Autonomous DevOps Agent</div>
-          </div>
-          <div className="chat-status">
-            <span
-              className="dot"
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "#34D399",
-                boxShadow: "0 0 8px rgba(52,211,153,.5)",
-              }}
-            />
-            Online
-          </div>
-        </div>
-        <div className="chat-body">
-          <div className="chat-msg">
-            <div className="msg-avatar">🤖</div>
-            <div>
-              <div className="msg-bubble">
-                <strong>Deploy Gate — Auth-Service:</strong>
-                <br />
-                I recommend <strong>against</strong> this deploy.{" "}
-                <span className="alert-line">Three tests failing in a critical auth module.</span>{" "}
-                Override requires your explicit confirmation.
-                <br />
-                <br />
-                <span
-                  style={{
-                    color: "#64748B",
-                    fontSize: ".68rem",
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
-                >
-                  Risk Score:{" "}
-                  <span style={{ color: "#F87171", fontWeight: 700 }}>HIGH (0.91)</span> · Blast
-                  Radius: 12 services
-                </span>
-              </div>
-              <div className="msg-time">Today 10:14 AM · Agent v3.2.1</div>
-            </div>
-          </div>
-        </div>
-        <div className="chat-actions">
-          {chatState === "idle" && (
-            <>
-              <button
-                className="chat-btn reject"
-                onClick={() => setChatState("rejected")}
-              >
-                ✕ Reject Deploy
-              </button>
-              <button
-                className="chat-btn approve"
-                onClick={() => setChatState("approved")}
-              >
-                ✓ Approve Override
-              </button>
-            </>
-          )}
-          {chatState === "approved" && (
-            <button className="chat-btn approve" style={{ opacity: 0.6, pointerEvents: "none" }}>
-              ✓ Override Approved
-            </button>
-          )}
-          {chatState === "rejected" && (
-            <button
-              className="chat-btn reject"
-              style={{ background: "rgba(248,113,113,.15)", pointerEvents: "none" }}
-            >
-              ✕ Deploy Rejected
-            </button>
-          )}
         </div>
       </div>
-    </div>
+
+      <div className="dash-content">
+        {error && (
+          <div className="dash-card" style={{ padding: "16px 22px", background: "rgba(248,113,113,.1)", borderColor: "rgba(248,113,113,.2)" }}>
+            <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="dash-card" style={{ padding: "16px 22px", background: "rgba(52,211,153,.1)", borderColor: "rgba(52,211,153,.2)" }}>
+            <p style={{ color: "var(--green)", fontSize: ".82rem" }}>{success}</p>
+          </div>
+        )}
+
+        <div className="metrics-row">
+          {mockMetrics.map((metric, i) => (
+            <div key={metric.label} className={`dash-card metric-card ${metric.color} dash-animate-in dash-delay-${i + 1}`}>
+              <div className="dash-card-body">
+                <p className="dash-card-title">{metric.label}</p>
+                <p className="metric-value" style={{ color: "var(--accent)" }}>{metric.value}</p>
+                <div className={`metric-delta ${metric.trend}`}>
+                  {metric.trend === "up" ? "↑" : "↓"} {metric.delta}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="middle-row">
+          <div className="dash-card dash-animate-in dash-delay-5">
+            <div className="dash-card-header">
+              <p className="dash-card-title">Recent Activity</p>
+              <span className="dash-card-badge">Live</span>
+            </div>
+            <div className="dash-card-body">
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Repository</th>
+                      <th>Action</th>
+                      <th>Status</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockActivity.map((item, i) => (
+                      <tr key={i}>
+                        <td>{item.repo}</td>
+                        <td>{item.action}</td>
+                        <td>
+                          <span className={`tag ${item.status === "success" ? "fix" : item.status === "error" ? "alert" : "observe"}`}>
+                            {item.status}
+                          </span>
+                        </td>
+                        <td>{item.time}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="dash-card dash-animate-in dash-delay-6">
+            <div className="dash-card-header">
+              <p className="dash-card-title">Connected Organizations</p>
+            </div>
+            <div className="dash-card-body">
+              {connectedOrgs.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)" }}>
+                  <p>No organizations connected</p>
+                  <button
+                    onClick={fetchGitHubOrgs}
+                    className="topbar-btn primary"
+                    style={{ marginTop: "16px" }}
+                  >
+                    Connect GitHub Org
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {connectedOrgs.map((org) => (
+                    <div
+                      key={org.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 14px",
+                        background: "var(--bg-surface)",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border)"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        {org.githubOrgAvatar && (
+                          <img src={org.githubOrgAvatar} alt={org.name} style={{ width: "32px", height: "32px", borderRadius: "8px" }} />
+                        )}
+                        <div>
+                          <p style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--text-primary)" }}>{org.name}</p>
+                          <p style={{ fontSize: ".68rem", color: "var(--text-muted)" }}>
+                            Connected {new Date(org.connectedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => disconnectOrg(org.id)}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: ".72rem",
+                          background: "transparent",
+                          border: "1px solid rgba(248,113,113,.2)",
+                          borderRadius: "6px",
+                          color: "var(--red)",
+                          cursor: "pointer"
+                        }}
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="bottom-row">
+          <div className="dash-card dash-animate-in dash-delay-7">
+            <div className="dash-card-header">
+              <p className="dash-card-title">Deployment Frequency</p>
+              <span className="dash-card-badge">This Week</span>
+            </div>
+            <div className="dash-card-body">
+              <div className="freq-list">
+                {[
+                  { label: "Monday", value: 12, max: 20 },
+                  { label: "Tuesday", value: 18, max: 20 },
+                  { label: "Wednesday", value: 8, max: 20 },
+                  { label: "Thursday", value: 15, max: 20 },
+                  { label: "Friday", value: 20, max: 20 },
+                ].map((day) => (
+                  <div key={day.label} className="freq-item">
+                    <span className="freq-label">{day.label}</span>
+                    <div className="freq-bar-track">
+                      <div className="freq-bar-fill" style={{ width: `${(day.value / day.max) * 100}%` }} />
+                    </div>
+                    <span className="freq-value">{day.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="dash-card dash-animate-in dash-delay-7">
+            <div className="dash-card-header">
+              <p className="dash-card-title">Quick Actions</p>
+            </div>
+            <div className="dash-card-body">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {[
+                  { label: "New Repository", icon: "+", desc: "Add a new repo to monitor" },
+                  { label: "Create Pipeline", icon: "▶", desc: "Set up a new CI/CD pipeline" },
+                  { label: "View Analytics", icon: "◉", desc: "Check deployment analytics" },
+                  { label: "Get Support", icon: "?", desc: "Chat with AI assistant" },
+                ].map((action) => (
+                  <button
+                    key={action.label}
+                    style={{
+                      padding: "16px",
+                      background: "var(--bg-surface)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "10px",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      transition: "all .25s"
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.borderColor = "var(--border-glow)"
+                      e.currentTarget.style.background = "var(--accent-dim)"
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.borderColor = "var(--border)"
+                      e.currentTarget.style.background = "var(--bg-surface)"
+                    }}
+                  >
+                    <div style={{ fontSize: "1.2rem", color: "var(--accent)", marginBottom: "8px" }}>{action.icon}</div>
+                    <p style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-primary)" }}>{action.label}</p>
+                    <p style={{ fontSize: ".65rem", color: "var(--text-muted)", marginTop: "4px" }}>{action.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showOrgPicker && (
+        <div className="fixed inset-0" style={{ background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
+          <div className="dash-card" style={{ width: "100%", maxWidth: "480px", maxHeight: "80vh", overflow: "hidden" }}>
+            <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ fontSize: ".92rem", fontWeight: 700, color: "var(--text-primary)" }}>Select GitHub Organization</h3>
+              <button
+                onClick={() => setShowOrgPicker(false)}
+                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.2rem" }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: "18px 22px", overflowY: "auto", maxHeight: "60vh" }}>
+              {githubOrgs.length === 0 ? (
+                <p style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)" }}>No organizations found</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {githubOrgs.map((org) => (
+                    <button
+                      key={org.id}
+                      onClick={() => connectOrg(org)}
+                      disabled={connectingOrg === org.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "12px 14px",
+                        background: "var(--bg-surface)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        opacity: connectingOrg === org.id ? 0.5 : 1
+                      }}
+                    >
+                      <img src={org.avatar_url} alt={org.login} style={{ width: "36px", height: "36px", borderRadius: "8px" }} />
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--text-primary)" }}>{org.login}</p>
+                        <p style={{ fontSize: ".68rem", color: "var(--text-muted)" }}>{org.url}</p>
+                      </div>
+                      {connectingOrg === org.id && (
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#2DD4BF] border-t-transparent" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
