@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  pipeline:
+    build:
+      context: ./pipeline-service
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - AGENT_ENDPOINT=http://agent:4000/handle-error
+      # Set these via .env file or your secrets manager:
+      - SENTRY_WEBHOOK_SECRET=${SENTRY_WEBHOOK_SECRET}
+      - AGENT_API_KEY=${AGENT_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - SLACK_CHANNEL=${SLACK_CHANNEL:-#alerts}
+      - ALLOWED_LEVELS=${ALLOWED_LEVELS:-error,fatal,critical}
+      - ALLOWED_ENVIRONMENTS=${ALLOWED_ENVIRONMENTS:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      agent:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  agent:
+    build:
+      context: ./agent-service
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - AGENT_PORT=4000
+      - AGENT_MODE=${AGENT_MODE:-llm}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AGENT_API_KEY=${AGENT_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
