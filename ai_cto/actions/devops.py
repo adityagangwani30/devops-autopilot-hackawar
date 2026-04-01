@@ -11,7 +11,7 @@ class AnalyzeWorkflows(Action):
         issues = []
         workflows = kwargs.get("workflows", [])
         
-        print(f"DEBUG: Analyzing {len(workflows)} workflows...")
+        print(f"\n🔍 Analyzing {len(workflows)} workflows...")
         
         for wf in workflows:
             content = wf.get("content", "")
@@ -24,37 +24,74 @@ class AnalyzeWorkflows(Action):
             try:
                 data = yaml.safe_load(content)
             except Exception as e:
-                issues.append({"workflow": wf_name, "issue": f"Invalid YAML: {str(e)}", "severity": "medium"})
+                issues.append({"workflow": wf_name, "issue": f"Invalid YAML: {str(e)[:50]}", "severity": "medium"})
                 continue
             
             if not data:
                 issues.append({"workflow": wf_name, "issue": "Empty workflow", "severity": "low"})
                 continue
             
+            # Check for jobs at top level or in workflow_call triggers
             jobs = data.get("jobs", {})
+            
+            # If no jobs, check if it's calling another workflow
             if not jobs:
+                if "workflow_call" in data.get("on", {}):
+                    continue  # Workflow call is fine
                 issues.append({"workflow": wf_name, "issue": "No jobs defined", "severity": "low"})
                 continue
             
-            has_cache = any("cache" in str(step.get("uses", "")).lower() 
-                          for job in jobs.values() if isinstance(job, dict)
-                          for step in job.get("steps", []))
+            # Check for caching in uses or with cache key
+            has_cache = False
+            for job_name, job in jobs.items() if isinstance(jobs, dict) else []:
+                if isinstance(job, dict):
+                    steps = job.get("steps", [])
+                    if steps:
+                        for step in steps:
+                            if isinstance(step, dict):
+                                uses = str(step.get("uses", "")).lower()
+                                if "cache" in uses:
+                                    has_cache = True
+                                    break
+                    if has_cache:
+                        break
+            
             if not has_cache:
                 issues.append({"workflow": wf_name, "issue": "No caching configured", "severity": "medium"})
             
-            install_count = sum(1 for job in jobs.values() if isinstance(job, dict)
-                              for step in job.get("steps", [])
-                              if isinstance(step, dict) and ("npm install" in str(step.get("run", "")).lower() or "pip install" in str(step.get("run", "")).lower() or "yarn install" in str(step.get("run", "")).lower()))
+            # Count install commands
+            install_keywords = ["npm install", "npm ci", "pip install", "pip3 install", 
+                               "yarn install", "bundle install", "go mod download",
+                               "cargo fetch", "poetry install"]
+            
+            install_count = 0
+            for job_name, job in jobs.items() if isinstance(jobs, dict) else []:
+                if isinstance(job, dict):
+                    steps = job.get("steps", [])
+                    if steps:
+                        for step in steps:
+                            if isinstance(step, dict):
+                                run_cmd = str(step.get("run", "")).lower()
+                                for keyword in install_keywords:
+                                    if keyword in run_cmd:
+                                        install_count += 1
+                                        break
+            
             if install_count > 1:
                 issues.append({"workflow": wf_name, "issue": f"Repeated installs ({install_count}x)", "severity": "low"})
             
-            has_parallel = any(isinstance(job, dict) and job.get("needs") for job in jobs.values())
-            if not has_parallel and len(jobs) > 1:
-                jobs_with_needs = sum(1 for job in jobs.values() if isinstance(job, dict) and job.get("needs"))
-                if jobs_with_needs == 0:
+            # Check for parallel execution opportunity
+            if len(jobs) > 1:
+                has_dependencies = False
+                for job_name, job in jobs.items() if isinstance(jobs, dict) else []:
+                    if isinstance(job, dict) and job.get("needs"):
+                        has_dependencies = True
+                        break
+                
+                if not has_dependencies:
                     issues.append({"workflow": wf_name, "issue": "Jobs could run in parallel", "severity": "low"})
         
-        print(f"DEBUG: Found {len(issues)} issues")
+        print(f"✅ Found {len(issues)} issues")
         return {"issues": issues}
 
 
@@ -66,26 +103,45 @@ class SuggestImprovements(Action):
         issues = kwargs.get("issues", [])
         repo = kwargs.get("repo", "")
         
-        print(f"DEBUG: Generating suggestions for {len(issues)} issues...")
+        print(f"\n💡 Generating suggestions for {len(issues)} issues...")
         
         if not issues:
             return {"suggestions": ["No issues found - workflow looks good!", "Consider adding more test coverage."]}
         
-        issues_text = "\n".join([f"- {i.get('workflow', 'unknown')}: {i.get('issue', 'N/A')}" for i in issues])
+        # Group issues by type for better suggestions
+        caching_issues = [i for i in issues if "caching" in i.get("issue", "").lower()]
+        install_issues = [i for i in issues if "install" in i.get("issue", "").lower()]
+        parallel_issues = [i for i in issues if "parallel" in i.get("issue", "").lower()]
         
-        prompt = f"""As an AI CTO, suggest improvements for this GitHub Actions CI/CD setup.
+        issues_text = "\n".join([
+            f"- {i.get('workflow', 'unknown')}: {i.get('issue', 'N/A')}" 
+            for i in issues[:15]  # Limit to 15 for prompt
+        ])
+        if len(issues) > 15:
+            issues_text += f"\n... and {len(issues) - 15} more issues"
+        
+        prompt = f"""As an AI DevOps expert, suggest improvements for this GitHub Actions CI/CD setup.
 
-Repo: {repo}
+Repository: {repo}
 
-Issues found:
+Issues found ({len(issues)} total):
+- Caching issues: {len(caching_issues)}
+- Repeated installs: {len(install_issues)}
+- Parallelization: {len(parallel_issues)}
+
+Details:
 {issues_text}
 
-Provide 3-5 specific, actionable bullet point suggestions. Keep each concise."""
+Provide 3-5 specific, actionable bullet point suggestions. Each should start with an action verb.
+Focus on the most impactful improvements that will reduce CI/CD costs and time.
+"""
 
         llm = LLMClient()
         response = llm.generate(prompt)
         
-        suggestions = [s.strip().lstrip("- ").lstrip("* ") for s in response.strip().split("\n") if s.strip()]
+        suggestions = [s.strip().lstrip("- ").lstrip("* ").lstrip("• ") 
+                      for s in response.strip().split("\n") 
+                      if s.strip() and len(s.strip()) > 10]
         
-        print(f"DEBUG: Generated {len(suggestions)} suggestions")
+        print(f"✅ Generated {len(suggestions)} suggestions")
         return {"suggestions": suggestions}
