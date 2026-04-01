@@ -47,12 +47,18 @@ const Prism = ({
     const INERT = Math.max(0, Math.min(1, inertia || 0.12));
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const renderer = new Renderer({
-      dpr,
-      alpha: transparent,
-      antialias: false
-    });
+    let renderer: Renderer;
+    try {
+      renderer = new Renderer({
+        dpr,
+        alpha: transparent,
+        antialias: false
+      });
+    } catch {
+      return;
+    }
     const gl = renderer.gl;
+    if (!gl) return;
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.BLEND);
