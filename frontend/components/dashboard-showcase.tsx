@@ -130,9 +130,10 @@ export function DashboardShowcase() {
           </div>
 
           {/* Core Loop Visual */}
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <div className="glass-panel rounded-3xl p-6 md:p-10">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Desktop: 5-col grid  |  Mobile: vertical stack */}
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] gap-4 md:gap-6 items-start">
                 {/* Observe */}
                 <div className="text-center group">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(34,211,238,0.2)]">
@@ -144,12 +145,12 @@ export function DashboardShowcase() {
                   </p>
                 </div>
 
-                {/* Arrow */}
-                <div className="hidden md:flex items-center justify-center">
-                  <ArrowRight size={32} className="text-teal-400/50" />
+                {/* Arrow 1 */}
+                <div className="hidden md:flex items-center justify-center pt-5">
+                  <ArrowRight size={32} className="text-teal-400/60" />
                 </div>
-                <div className="md:hidden flex justify-center py-2">
-                  <ArrowRight size={24} className="text-teal-400/50 rotate-90" />
+                <div className="md:hidden flex justify-center py-1">
+                  <ArrowRight size={24} className="text-teal-400/60 rotate-90" />
                 </div>
 
                 {/* Reason */}
@@ -162,25 +163,25 @@ export function DashboardShowcase() {
                     Analyzes blast radius, evaluates risk scores, cross-references past failures, and decides the best course of action.
                   </p>
                 </div>
-              </div>
 
-              {/* Act row */}
-              <div className="mt-8 flex justify-center">
-                <div className="hidden md:flex items-center -mt-2 mr-4">
-                  <ArrowRight size={32} className="text-teal-400/50" />
+                {/* Arrow 2 */}
+                <div className="hidden md:flex items-center justify-center pt-5">
+                  <ArrowRight size={32} className="text-teal-400/60" />
                 </div>
-                <div className="md:hidden flex justify-center py-2 mb-2">
-                  <ArrowRight size={24} className="text-teal-400/50 rotate-90" />
+                <div className="md:hidden flex justify-center py-1">
+                  <ArrowRight size={24} className="text-teal-400/60 rotate-90" />
                 </div>
-              </div>
-              <div className="text-center group max-w-xs mx-auto">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(52,211,153,0.2)]">
-                  <Zap size={28} className="text-white" />
+
+                {/* Act */}
+                <div className="text-center group">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_30px_rgba(52,211,153,0.2)]">
+                    <Zap size={28} className="text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground mb-2">Act</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Proposes fixes, pushes back on risky deploys, or auto-remediates — always with human-in-the-loop approval.
+                  </p>
                 </div>
-                <h3 className="text-lg font-bold text-foreground mb-2">Act</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Proposes fixes, pushes back on risky deploys, or auto-remediates — always with human-in-the-loop approval.
-                </p>
               </div>
             </div>
           </div>

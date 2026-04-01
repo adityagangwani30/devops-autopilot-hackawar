@@ -4,9 +4,15 @@ import Prism from "@/components/Prism"
 
 export function HeroSection() {
   return (
-    <section className="relative isolate overflow-hidden px-4 pt-32 pb-8 md:pt-40 md:pb-12" id="hero">
-      <div className="absolute inset-0 z-0">
-        <Prism animationType="3drotate" />
+    <section className="relative isolate overflow-hidden px-4 pt-32 pb-24 md:pt-40 md:pb-32" id="hero">
+      <div
+        className="absolute inset-0 z-0 opacity-50"
+        style={{
+          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 45%, black 40%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 45%, black 40%, transparent 100%)',
+        }}
+      >
+        <Prism animationType="3drotate" noise={0.03} bloom={1.2} scale={2.0} />
       </div>
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_30%,rgba(45,212,191,0.2),transparent_62%)]" />
 
