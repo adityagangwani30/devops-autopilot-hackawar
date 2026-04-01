@@ -1,55 +1,28 @@
-"use client"
-
-import React from "react"
 import { Linkedin } from "lucide-react"
 
 const teamMembers = [
   {
     name: "Aditya Gangani",
-    image: "/images/aditya.jpeg",
+    image: "images/aditya.jpeg",
     branch: "B.E. Electronics and Communication Engineering",
     usn: "1MS23EC007",
     linkedin: "https://www.linkedin.com/in/aditya-gangwani-615271246/",
-    initials: "AG",
   },
   {
     name: "Utkarsh Kumar",
-    image: "/images/utkarsh.jpeg",
+    image: "images/utkarsh.jpeg",
     branch: "B.E. Electronics and Communication Engineering",
     usn: "1MS23EC141",
     linkedin: "https://www.linkedin.com/in/utkarsh-kumar-306a242a6/",
-    initials: "UK",
   },
   {
     name: "Shivesh Tiwari",
-    image: "/images/shivesh.jpeg",
+    image: "images/shivesh.jpeg",
     branch: "B.E. Chemical Engineering",
     usn: "1MS23CH050",
     linkedin: "https://www.linkedin.com/in/shivesh-tiwari-88b451242/",
-    initials: "ST",
   },
 ]
-
-function TeamMemberImage({ src, alt, initials }: { src: string; alt: string; initials: string }) {
-  const [hasError, setHasError] = React.useState(false)
-
-  if (hasError) {
-    return (
-      <div className="w-full h-full bg-[#1a1a1a] flex items-center justify-center">
-        <span className="text-4xl font-bold text-[#0ea5e9]">{initials}</span>
-      </div>
-    )
-  }
-
-  return (
-    <img 
-      src={src} 
-      alt={alt}
-      className="w-full h-full object-cover"
-      onError={() => setHasError(true)}
-    />
-  )
-}
 
 export function TeamSection() {
   return (
@@ -69,10 +42,10 @@ export function TeamSection() {
               className="group relative bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden hover:border-[#0ea5e9] transition-colors"
             >
               <div className="aspect-square relative overflow-hidden bg-[#1a1a1a]">
-                <TeamMemberImage 
+                <img 
                   src={member.image} 
                   alt={member.name}
-                  initials={member.initials}
+                  className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent opacity-70" />
                 <div className="absolute bottom-4 left-4 right-4">

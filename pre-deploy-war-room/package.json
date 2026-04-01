@@ -1,0 +1,21 @@
+{
+  "name": "pre-deploy-war-room",
+  "version": "1.0.0",
+  "description": "Pre-deploy risk analysis and Slack briefing module with CLI",
+  "main": "index.js",
+  "bin": {
+    "war-room": "./bin/war-room.js"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "cli": "node cli.js",
+    "hook": "node bin/war-room.js",
+    "postinstall": "node bin/war-room.js install"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@slack/webhook": "^7.0.2",
+    "dotenv": "^16.3.1"
+  }
+}
