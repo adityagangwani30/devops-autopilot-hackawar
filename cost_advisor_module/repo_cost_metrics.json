@@ -1,0 +1,44 @@
+[
+  {
+    "repo_name": "media-processing-api",
+    "deployed_env": "Production",
+    "criticality_tier": "Tier 1",
+    "monthly_cost_usd": 850,
+    "unit_economics": {
+      "monthly_active_users": 12000,
+      "cost_per_1k_users": 70.83
+    },
+    "infrastructure": {
+      "provider": "AWS",
+      "provisioned_compute": "EC2 c5.2xlarge",
+      "avg_cpu_percent": 45,
+      "peak_cpu_percent": 88
+    },
+    "database": {
+      "type": "PostgreSQL",
+      "allocated_storage_gb": 500,
+      "avg_read_iops": 400
+    }
+  },
+  {
+    "repo_name": "internal-analytics-dashboard",
+    "deployed_env": "Staging",
+    "criticality_tier": "Tier 3",
+    "monthly_cost_usd": 420,
+    "unit_economics": {
+      "monthly_active_users": 15,
+      "cost_per_1k_users": 28000
+    },
+    "infrastructure": {
+      "provider": "AWS",
+      "provisioned_compute": "EC2 t3.2xlarge",
+      "avg_cpu_percent": 3,
+      "peak_cpu_percent": 8
+    },
+    "storage": {
+      "allocated_gb": 1000,
+      "used_gb": 1000,
+      "last_accessed_days_ago": 42
+    }
+  }
+]
