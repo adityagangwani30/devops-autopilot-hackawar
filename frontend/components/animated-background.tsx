@@ -1,6 +1,5 @@
 "use client"
 
-// Static particle data to avoid hydration mismatch
 const particles = [
   { size: 4, left: 12, top: 23, duration: 18, delay: 2 },
   { size: 3, left: 45, top: 67, duration: 25, delay: 5 },
@@ -47,172 +46,166 @@ const shimmerParticles = [
 
 export function AnimatedBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none">
-      {/* Base gradient */}
-      <div 
+    <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(135deg, #0a1628 0%, #0d2847 25%, #0f3d5c 50%, #0d4a5a 75%, #0b4d45 100%)'
+          background: "linear-gradient(140deg, #0f172a 0%, #0c1a32 32%, #0d203d 58%, #0e1b34 100%)",
         }}
       />
-      
-      {/* Dynamic animated light beams - water wave effect */}
-      <div 
+
+      <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 150% 100% at 20% 10%, rgba(80, 200, 220, 0.5) 0%, transparent 55%)',
-          animation: 'light-wave 8s ease-in-out infinite'
+          background: "radial-gradient(ellipse 150% 100% at 20% 10%, rgba(45, 212, 191, 0.26) 0%, transparent 58%)",
+          animation: "light-wave 8s ease-in-out infinite",
         }}
       />
-      <div 
+      <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 120% 80% at 75% 25%, rgba(60, 180, 200, 0.45) 0%, transparent 50%)',
-          animation: 'light-wave-2 10s ease-in-out infinite'
+          background: "radial-gradient(ellipse 120% 80% at 75% 25%, rgba(34, 211, 238, 0.2) 0%, transparent 52%)",
+          animation: "light-wave-2 10s ease-in-out infinite",
         }}
       />
-      <div 
+      <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 100% 70% at 45% 5%, rgba(100, 220, 200, 0.4) 0%, transparent 45%)',
-          animation: 'light-wave-3 12s ease-in-out infinite'
+          background: "radial-gradient(ellipse 100% 70% at 45% 5%, rgba(45, 212, 191, 0.16) 0%, transparent 48%)",
+          animation: "light-wave-3 12s ease-in-out infinite",
         }}
       />
-      <div 
+      <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(ellipse 80% 60% at 60% 20%, rgba(90, 200, 180, 0.35) 0%, transparent 40%)',
-          animation: 'light-wave-4 14s ease-in-out infinite'
+          background: "radial-gradient(ellipse 80% 60% at 60% 20%, rgba(14, 165, 233, 0.14) 0%, transparent 44%)",
+          animation: "light-wave-4 14s ease-in-out infinite",
         }}
       />
-      
-      {/* Pulsing ambient glow */}
-      <div 
+
+      <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(circle at 30% 30%, rgba(100, 180, 220, 0.3) 0%, transparent 50%)',
-          animation: 'light-pulse 6s ease-in-out infinite'
+          background: "radial-gradient(circle at 30% 30%, rgba(45, 212, 191, 0.16) 0%, transparent 50%)",
+          animation: "light-pulse 6s ease-in-out infinite",
         }}
       />
-      <div 
+      <div
         className="absolute inset-0"
         style={{
-          background: 'radial-gradient(circle at 70% 60%, rgba(80, 200, 180, 0.25) 0%, transparent 45%)',
-          animation: 'light-pulse 8s ease-in-out infinite 2s'
+          background: "radial-gradient(circle at 70% 60%, rgba(34, 211, 238, 0.14) 0%, transparent 45%)",
+          animation: "light-pulse 8s ease-in-out infinite 2s",
         }}
       />
-      
-      {/* Subtle particle effect overlay */}
+
       <div className="absolute inset-0">
         {particles.map((p, i) => (
           <div
             key={i}
-            className="absolute rounded-full bg-cyan-400/30"
+            className="absolute rounded-full bg-cyan-300/25"
             style={{
-              width: p.size + 'px',
-              height: p.size + 'px',
-              left: p.left + '%',
-              top: p.top + '%',
+              width: p.size + "px",
+              height: p.size + "px",
+              left: p.left + "%",
+              top: p.top + "%",
               animation: `float-particle ${p.duration}s ease-in-out infinite`,
-              animationDelay: `${p.delay}s`
+              animationDelay: `${p.delay}s`,
             }}
           />
         ))}
       </div>
-      
-      {/* Canopy rays - god rays falling from above */}
+
       <div className="absolute inset-0 overflow-hidden">
-        {/* Main canopy ray 1 - wide central beam */}
-        <div 
-          className="absolute -top-[30%] left-[10%] w-[50%] h-[160%]"
+        <div
+          className="absolute -top-[30%] left-[10%] h-[160%] w-[50%]"
           style={{
-            background: 'linear-gradient(180deg, rgba(200, 230, 255, 0.5) 0%, rgba(160, 210, 250, 0.25) 25%, rgba(120, 190, 230, 0.1) 50%, transparent 80%)',
-            transform: 'skewX(-8deg)',
-            animation: 'canopy-ray-1 6s ease-in-out infinite',
-            filter: 'blur(25px)',
+            background:
+              "linear-gradient(180deg, rgba(45, 212, 191, 0.26) 0%, rgba(45, 212, 191, 0.12) 25%, rgba(45, 212, 191, 0.04) 50%, transparent 80%)",
+            transform: "skewX(-8deg)",
+            animation: "canopy-ray-1 6s ease-in-out infinite",
+            filter: "blur(24px)",
           }}
         />
-        
-        {/* Canopy ray 2 - right side */}
-        <div 
-          className="absolute -top-[25%] left-[50%] w-[35%] h-[150%]"
+
+        <div
+          className="absolute -top-[25%] left-[50%] h-[150%] w-[35%]"
           style={{
-            background: 'linear-gradient(180deg, rgba(220, 240, 255, 0.45) 0%, rgba(180, 220, 250, 0.2) 30%, rgba(140, 200, 240, 0.08) 55%, transparent 75%)',
-            transform: 'skewX(6deg)',
-            animation: 'canopy-ray-2 8s ease-in-out infinite',
-            filter: 'blur(20px)',
+            background:
+              "linear-gradient(180deg, rgba(34, 211, 238, 0.24) 0%, rgba(34, 211, 238, 0.1) 30%, rgba(34, 211, 238, 0.04) 55%, transparent 75%)",
+            transform: "skewX(6deg)",
+            animation: "canopy-ray-2 8s ease-in-out infinite",
+            filter: "blur(20px)",
           }}
         />
-        
-        {/* Canopy ray 3 - left accent */}
-        <div 
-          className="absolute -top-[20%] left-[0%] w-[25%] h-[140%]"
+
+        <div
+          className="absolute -top-[20%] left-[0%] h-[140%] w-[25%]"
           style={{
-            background: 'linear-gradient(180deg, rgba(190, 225, 255, 0.4) 0%, rgba(150, 205, 245, 0.18) 35%, transparent 70%)',
-            transform: 'skewX(-12deg)',
-            animation: 'canopy-ray-3 10s ease-in-out infinite',
-            filter: 'blur(30px)',
+            background:
+              "linear-gradient(180deg, rgba(45, 212, 191, 0.18) 0%, rgba(45, 212, 191, 0.08) 35%, transparent 70%)",
+            transform: "skewX(-12deg)",
+            animation: "canopy-ray-3 10s ease-in-out infinite",
+            filter: "blur(28px)",
           }}
         />
-        
-        {/* Canopy ray 4 - far right thin beam */}
-        <div 
-          className="absolute -top-[35%] left-[70%] w-[20%] h-[170%]"
+
+        <div
+          className="absolute -top-[35%] left-[70%] h-[170%] w-[20%]"
           style={{
-            background: 'linear-gradient(180deg, rgba(210, 235, 255, 0.42) 0%, rgba(170, 215, 250, 0.18) 25%, transparent 60%)',
-            transform: 'skewX(10deg)',
-            animation: 'canopy-ray-1 12s ease-in-out infinite reverse',
-            filter: 'blur(18px)',
+            background:
+              "linear-gradient(180deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.08) 25%, transparent 60%)",
+            transform: "skewX(10deg)",
+            animation: "canopy-ray-1 12s ease-in-out infinite reverse",
+            filter: "blur(18px)",
           }}
         />
-        
-        {/* Canopy ray 5 - subtle middle fill */}
-        <div 
-          className="absolute -top-[15%] left-[30%] w-[40%] h-[130%]"
+
+        <div
+          className="absolute -top-[15%] left-[30%] h-[130%] w-[40%]"
           style={{
-            background: 'linear-gradient(180deg, rgba(230, 245, 255, 0.35) 0%, rgba(200, 230, 255, 0.15) 20%, transparent 50%)',
-            transform: 'skewX(-3deg)',
-            animation: 'canopy-ray-2 14s ease-in-out infinite 3s',
-            filter: 'blur(35px)',
+            background:
+              "linear-gradient(180deg, rgba(45, 212, 191, 0.2) 0%, rgba(45, 212, 191, 0.08) 20%, transparent 50%)",
+            transform: "skewX(-3deg)",
+            animation: "canopy-ray-2 14s ease-in-out infinite 3s",
+            filter: "blur(34px)",
           }}
         />
-        
-        {/* Additional dynamic ray */}
-        <div 
-          className="absolute -top-[25%] left-[85%] w-[15%] h-[145%]"
+
+        <div
+          className="absolute -top-[25%] left-[85%] h-[145%] w-[15%]"
           style={{
-            background: 'linear-gradient(180deg, rgba(200, 230, 255, 0.38) 0%, rgba(160, 210, 245, 0.15) 30%, transparent 65%)',
-            transform: 'skewX(15deg)',
-            animation: 'canopy-ray-3 9s ease-in-out infinite 1.5s',
-            filter: 'blur(22px)',
+            background:
+              "linear-gradient(180deg, rgba(34, 211, 238, 0.2) 0%, rgba(34, 211, 238, 0.08) 30%, transparent 65%)",
+            transform: "skewX(15deg)",
+            animation: "canopy-ray-3 9s ease-in-out infinite 1.5s",
+            filter: "blur(22px)",
           }}
         />
       </div>
-      
-      {/* Shimmer dust particles in the rays */}
+
       <div className="absolute inset-0">
         {shimmerParticles.map((p, i) => (
           <div
             key={`shimmer-${i}`}
-            className="absolute rounded-full bg-white/50"
+            className="absolute rounded-full bg-teal-200/35"
             style={{
-              width: p.size + 'px',
-              height: p.size + 'px',
-              left: p.left + '%',
-              top: p.top + '%',
+              width: p.size + "px",
+              height: p.size + "px",
+              left: p.left + "%",
+              top: p.top + "%",
               animation: `canopy-shimmer ${p.duration}s ease-in-out infinite`,
               animationDelay: `${p.delay}s`,
-              filter: 'blur(0.5px)',
+              filter: "blur(0.5px)",
             }}
           />
         ))}
       </div>
-      
-      {/* Noise texture overlay */}
-      <div 
+
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+          backgroundImage:
+            'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
         }}
       />
     </div>
