@@ -16,9 +16,9 @@ class AIAgent:
     
     def _extract_repo(self) -> str:
         import re
-        # Find all occurrences of owner/repo pattern
-        matches = re.findall(r'([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)', self.goal)
-        # Return the last match (usually the actual repo, not "CI/CD" or similar)
+        # Match owner/repo pattern - repo can have dots, dashes, underscores
+        matches = re.findall(r'([a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+)', self.goal)
+        # Return the last match (usually the actual repo)
         if matches:
             return matches[-1]
         return ""
