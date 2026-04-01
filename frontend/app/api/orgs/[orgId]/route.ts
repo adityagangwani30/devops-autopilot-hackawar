@@ -17,7 +17,7 @@ export async function GET(
 
     const { orgId } = await params
     const { db } = await import("@/lib/db")
-    const { organization, member } = await import("@/lib/db/schema")
+    const { organization, member, user } = await import("@/lib/db/schema")
     const { eq, and } = await import("drizzle-orm")
 
     const org = await db
@@ -42,10 +42,11 @@ export async function GET(
       .select({
         userId: member.userId,
         role: member.role,
-        userName: session.user.name,
-        userEmail: session.user.email,
+        userName: user.name,
+        userEmail: user.email,
       })
       .from(member)
+      .innerJoin(user, eq(member.userId, user.id))
       .where(eq(member.organizationId, orgId))
 
     return NextResponse.json({
