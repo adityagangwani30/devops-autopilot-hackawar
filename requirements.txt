@@ -1,6 +1,11 @@
-google-generativeai
+openai
 requests
 typer
 pydantic
 pyyaml
 python-dotenv
+boto3
+fastapi
+uvicorn
+pandas
+numpy

@@ -1,14 +1,6 @@
-from pydantic import BaseModel
 import requests
 from ai_cto.actions.base import Action
-from ai_cto.config import GEMINI_API_KEY
-import google.generativeai as genai
-
-genai.configure(api_key=GEMINI_API_KEY)
-
-
-class WebSearchInput(BaseModel):
-    query: str
+from ai_cto.llm import LLMClient
 
 
 class WebSearch(Action):
@@ -18,17 +10,10 @@ class WebSearch(Action):
     def run(self, **kwargs) -> dict:
         query = kwargs.get("query", "")
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(
-            f"Search the web for: {query}. Provide a concise answer with sources."
-        )
+        llm = LLMClient()
+        response = llm.generate(f"Search the web for: {query}. Provide a concise answer with sources.")
         
-        return {"query": query, "answer": response.text.strip()}
-
-
-class CodeExplainInput(BaseModel):
-    code: str
-    language: str = "python"
+        return {"query": query, "answer": response.strip()}
 
 
 class CodeExplain(Action):
@@ -39,7 +24,7 @@ class CodeExplain(Action):
         code = kwargs.get("code", "")
         language = kwargs.get("language", "python")
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        llm = LLMClient()
         prompt = f"""Explain this {language} code in simple terms:
 
 ```{language}
@@ -48,13 +33,9 @@ class CodeExplain(Action):
 
 Provide a brief explanation (2-3 sentences)."""
         
-        response = model.generate_content(prompt)
+        response = llm.generate(prompt)
         
-        return {"explanation": response.text.strip()}
-
-
-class GeneralChatInput(BaseModel):
-    message: str
+        return {"explanation": response.strip()}
 
 
 class GeneralChat(Action):
@@ -64,15 +45,10 @@ class GeneralChat(Action):
     def run(self, **kwargs) -> dict:
         message = kwargs.get("message", "")
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content(message)
+        llm = LLMClient()
+        response = llm.generate(message)
         
-        return {"response": response.text.strip()}
-
-
-class WriteCodeInput(BaseModel):
-    task: str
-    language: str = "python"
+        return {"response": response.strip()}
 
 
 class WriteCode(Action):
@@ -83,21 +59,16 @@ class WriteCode(Action):
         task = kwargs.get("task", "")
         language = kwargs.get("language", "python")
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        llm = LLMClient()
         prompt = f"""Write {language} code to accomplish this task:
 
 {task}
 
 Provide clean, working code with brief comments."""
         
-        response = model.generate_content(prompt)
+        response = llm.generate(prompt)
         
-        return {"code": response.text.strip(), "language": language}
-
-
-class DebugCodeInput(BaseModel):
-    code: str
-    error: str = ""
+        return {"code": response.strip(), "language": language}
 
 
 class DebugCode(Action):
@@ -108,7 +79,7 @@ class DebugCode(Action):
         code = kwargs.get("code", "")
         error = kwargs.get("error", "")
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        llm = LLMClient()
         prompt = f"""Debug this code. Error message: {error}
 
 Code:
@@ -117,14 +88,9 @@ Code:
 
 Provide the fixed code and explain the issue."""
         
-        response = model.generate_content(prompt)
+        response = llm.generate(prompt)
         
-        return {"fix": response.text.strip()}
-
-
-class SummarizeTextInput(BaseModel):
-    text: str
-    max_words: int = 50
+        return {"fix": response.strip()}
 
 
 class SummarizeText(Action):
@@ -135,17 +101,12 @@ class SummarizeText(Action):
         text = kwargs.get("text", "")
         max_words = kwargs.get("max_words", 50)
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        llm = LLMClient()
         prompt = f"Summarize this in {max_words} words or less:\n\n{text}"
         
-        response = model.generate_content(prompt)
+        response = llm.generate(prompt)
         
-        return {"summary": response.text.strip()}
-
-
-class TranslateTextInput(BaseModel):
-    text: str
-    target_lang: str
+        return {"summary": response.strip()}
 
 
 class TranslateText(Action):
@@ -156,9 +117,9 @@ class TranslateText(Action):
         text = kwargs.get("text", "")
         target = kwargs.get("target_lang", "English")
         
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        llm = LLMClient()
         prompt = f"Translate to {target}:\n\n{text}"
         
-        response = model.generate_content(prompt)
+        response = llm.generate(prompt)
         
-        return {"translation": response.text.strip(), "language": target}
+        return {"translation": response.strip(), "language": target}

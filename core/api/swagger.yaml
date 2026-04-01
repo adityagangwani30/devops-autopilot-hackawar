@@ -1,0 +1,732 @@
+openapi: 3.0.3
+info:
+  title: AI CTO Core API
+  description: Core API for AWS cost optimization, log monitoring, and dashboard services
+  version: 1.0.0
+  contact:
+    name: AI CTO Team
+    email: team@example.com
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      description: Returns basic API information
+      operationId: root
+      tags:
+        - System
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "AI CTO Core API"
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  docs:
+                    type: string
+                    example: "/docs"
+                  redoc:
+                    type: string
+                    example: "/redoc"
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API
+      operationId: healthCheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: Healthy status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+  /api/aws/cost/summary:
+    get:
+      summary: Get cost and usage summary
+      description: Retrieve cost and usage data from AWS Cost Explorer
+      operationId: getCostSummary
+      tags:
+        - AWS Cost Optimization
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date in YYYY-MM-DD format (defaults to 30 days ago)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date in YYYY-MM-DD format (defaults to today)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: granularity
+          in: query
+          description: Time granularity (DAILY, MONTHLY, or HOURLY)
+          required: false
+          schema:
+            type: string
+            enum: [DAILY, MONTHLY, HOURLY]
+            default: DAILY
+      responses:
+        '200':
+          description: Cost and usage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      type: string
+                  costs:
+                    type: array
+                    items:
+                      type: number
+                  timeline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period:
+                          type: string
+                        services:
+                          type: array
+                          items:
+                            type: string
+                        costs:
+                          type: array
+                          items:
+                            type: number
+                  total_cost:
+                    type: number
+                    format: float
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/aws/cost/trends:
+    get:
+      summary: Get cost trends over time
+      description: Retrieve cost trends over time from AWS Cost Explorer
+      operationId: getCostTrends
+      tags:
+        - AWS Cost Optimization
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date in YYYY-MM-DD format (defaults to 30 days ago)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date in YYYY-MM-DD format (defaults to today)
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Cost trends data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  services:
+                    type: array
+                    items:
+                      type: string
+                  costs:
+                    type: array
+                    items:
+                      type: number
+                  timeline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period:
+                          type: string
+                        services:
+                          type: array
+                          items:
+                            type: string
+                        costs:
+                          type: array
+                          items:
+                            type: number
+                  total_cost:
+                    type: number
+                    format: float
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/aws/reservations/utilization:
+    get:
+      summary: Get Reserved Instance utilization
+      description: Retrieve Reserved Instance utilization data from AWS Cost Explorer
+      operationId: getReservationUtilization
+      tags:
+        - AWS Cost Optimization
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date in YYYY-MM-DD format (defaults to 30 days ago)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date in YYYY-MM-DD format (defaults to today)
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Reservation utilization data
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/aws/savingsplans/utilization:
+    get:
+      summary: Get Savings Plans utilization
+      description: Retrieve Savings Plans utilization data from AWS Cost Explorer
+      operationId: getSavingsPlansUtilization
+      tags:
+        - AWS Cost Optimization
+      parameters:
+        - name: start_date
+          in: query
+          description: Start date in YYYY-MM-DD format (defaults to 30 days ago)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: End date in YYYY-MM-DD format (defaults to today)
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Savings Plans utilization data
+          content:
+            application/json:
+              schema:
+                type: object
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/aws/ec2/instances:
+    get:
+      summary: Get EC2 instances analysis
+      description: Retrieve analysis of EC2 instances for optimization opportunities
+      operationId: getEC2Instances
+      tags:
+        - AWS Cost Optimization
+      responses:
+        '200':
+          description: EC2 instances utilization data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instances:
+                    type: array
+                    items:
+                      type: string
+                  utilization:
+                    type: array
+                    items:
+                      type: number
+                  average_utilization:
+                    type: number
+                    format: float
+                  underutilized_count:
+                    type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/aws/recommendations:
+    get:
+      summary: Get optimization recommendations
+      description: Retrieve AWS cost optimization recommendations
+      operationId: getOptimizationRecommendations
+      tags:
+        - AWS Cost Optimization
+      responses:
+        '200':
+          description: List of optimization recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      description: Type of optimization (e.g., rightsizing, reserved_instance)
+                    resource_id:
+                      type: string
+                      description: ID of the resource to optimize
+                    current_cost:
+                      type: number
+                      format: float
+                      description: Current monthly cost
+                    estimated_savings:
+                      type: number
+                      format: float
+                      description: Estimated monthly savings
+                    confidence:
+                      type: number
+                      format: float
+                      minimum: 0.0
+                      maximum: 1.0
+                      description: Confidence level of the recommendation
+                    description:
+                      type: string
+                      description: Detailed description of the recommendation
+                    action_required:
+                      type: string
+                      description: Required action to implement the recommendation
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/monitoring/logs:
+    post:
+      summary: Ingest log entries
+      description: Ingest log entries for analysis and alert generation
+      operationId: ingestLogs
+      tags:
+        - Monitoring
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                logs:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of log entries to process
+                service:
+                  type: string
+                  description: Service name generating the logs
+                  default: "unknown"
+      responses:
+        '200':
+          description: Log processing results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  alerts_generated:
+                    type: integer
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        severity:
+                          type: string
+                          enum: [info, warning, error, critical]
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        service:
+                          type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/monitoring/alerts:
+    get:
+      summary: Get recent alerts
+      description: Retrieve recent alerts generated by the log analysis system
+      operationId: getAlerts
+      tags:
+        - Monitoring
+      parameters:
+        - name: severity
+          in: query
+          description: Filter by alert severity
+          required: false
+          schema:
+            type: string
+            enum: [info, warning, error, critical]
+        - name: service
+          in: query
+          description: Filter by service name
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of alerts to return
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+      responses:
+        '200':
+          description: List of alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        timestamp:
+                          type: string
+                          format: date-time
+                        severity:
+                          type: string
+                          enum: [info, warning, error, critical]
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        service:
+                          type: string
+                        log_entries:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              timestamp:
+                                type: string
+                                format: date-time
+                              service:
+                                type: string
+                              level:
+                                type: string
+                              message:
+                                type: string
+                              raw_log:
+                                type: string
+                  count:
+                    type: integer
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/monitoring/stats:
+    get:
+      summary: Get log processing statistics
+      description: Retrieve statistics about processed logs
+      operationId: getLogStatistics
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Log processing statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_logs:
+                    type: integer
+                  logs_by_level:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  logs_by_service:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  time_range:
+                    type: object
+                    properties:
+                      start:
+                        type: string
+                        format: date-time
+                      end:
+                        type: string
+                        format: date-time
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/dashboard/data/{source_name}:
+    get:
+      summary: Get dashboard data from a registered source
+      description: Retrieve data from a registered dashboard data source
+      operationId: getDashboardData
+      tags:
+        - Dashboard
+      parameters:
+        - name: source_name
+          in: path
+          required: true
+          description: Name of the data source
+          schema:
+            type: string
+        - name: force_refresh
+          in: query
+          description: Whether to force refresh cached data
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Data source not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+  /api/dashboard/register-source:
+    post:
+      summary: Register a new dashboard data source
+      description: Register a new data source for the dashboard
+      operationId: registerDataSource
+      tags:
+        - Dashboard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the data source
+                ttl:
+                  type: integer
+                  description: Time to live in seconds for cached data
+                  default: 300
+      responses:
+        '200':
+          description: Data source registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+components:
+  schemas:
+    CostData:
+      type: object
+      properties:
+        service:
+          type: string
+        amount:
+          type: number
+          format: float
+        unit:
+          type: string
+        time_period:
+          type: string
+        usage_quantity:
+          type: number
+          format: float
+    OptimizationRecommendation:
+      type: object
+      properties:
+        type:
+          type: string
+        resource_id:
+          type: string
+        current_cost:
+          type: number
+          format: float
+        estimated_savings:
+          type: number
+          format: float
+        confidence:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+        description:
+          type: string
+        action_required:
+          type: string
+    LogEntry:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        service:
+          type: string
+        level:
+          type: string
+        message:
+          type: string
+        raw_log:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        severity:
+          type: string
+          enum: [info, warning, error, critical]
+        title:
+          type: string
+        description:
+          type: string
+        service:
+          type: string
+        log_entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+        metadata:
+          type: object
+          additionalProperties: true
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
