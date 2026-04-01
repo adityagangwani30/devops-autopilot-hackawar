@@ -1,18 +1,15 @@
-from pydantic import BaseModel
-import os
 import requests
 from ai_cto.config import GITHUB_TOKEN
 
 GITHUB_API = "https://api.github.com"
 
 
-class ActionInput(BaseModel):
-    repo: str | None = None
-
-
-class FetchWorkflows(ActionInput):
+class FetchWorkflows:
     name: str = "fetch_workflows"
     description: str = "Fetch CI/CD workflow YAML files from .github/workflows/"
+    
+    def __init__(self, repo: str = None):
+        self.repo = repo
     
     def run(self, **kwargs) -> dict:
         repo = kwargs.get("repo") or self.repo
@@ -21,25 +18,18 @@ class FetchWorkflows(ActionInput):
         
         owner, repo_name = repo.split("/")
         
-        headers = {
-            "Accept": "application/vnd.github.v3+json"
-        }
-        
-        # Use token if available, but don't require it for public repos
-        if GITHUB_TOKEN:
-            headers["Authorization"] = f"token {GITHUB_TOKEN}"
+        # For public repos, don't use token to avoid 401 errors with invalid tokens
+        headers = {"Accept": "application/vnd.github.v3+json"}
         
         url = f"{GITHUB_API}/repos/{owner}/{repo_name}/contents/.github/workflows"
         resp = requests.get(url, headers=headers)
         
         print(f"DEBUG: Fetching workflows from {owner}/{repo_name}, status: {resp.status_code}")
         
-        if resp.status_code == 401:
-            return {"error": "GitHub authentication failed. Check your GITHUB_TOKEN in .env", "workflows": [], "repo": repo}
-        elif resp.status_code == 404:
+        if resp.status_code == 404:
             return {"error": f"Repository {owner}/{repo_name} not found or no workflows directory", "workflows": [], "repo": repo}
         elif resp.status_code != 200:
-            return {"error": f"GitHub API error: {resp.status_code} - {resp.text}", "workflows": [], "repo": repo}
+            return {"error": f"GitHub API error: {resp.status_code} - {resp.text[:200]}", "workflows": [], "repo": repo}
         
         files = resp.json()
         workflows = []
@@ -58,19 +48,21 @@ class FetchWorkflows(ActionInput):
         return {"repo": repo, "workflows": workflows}
 
 
-class CommentOnPRInput(BaseModel):
-    repo: str | None = None
-    pr_number: int | None = None
-    message: str | None = None
-
-
-class CommentOnPR(CommentOnPRInput):
+class CommentOnPR:
     name: str = "comment_on_pr"
     description: str = "Post a comment on a GitHub pull request"
+    
+    def __init__(self, repo: str = None, pr_number: int = None, message: str = None):
+        self.repo = repo
+        self.pr_number = pr_number
+        self.message = message
     
     def run(self, **kwargs) -> dict:
         repo = kwargs.get("repo") or self.repo
         owner, repo_name = repo.split("/")
+        
+        if not GITHUB_TOKEN:
+            return {"error": "GITHUB_TOKEN required for commenting", "success": False}
         
         headers = {
             "Authorization": f"token {GITHUB_TOKEN}",

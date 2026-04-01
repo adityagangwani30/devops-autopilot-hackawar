@@ -1,10 +1,10 @@
 from typing import Any, Optional
 from ai_cto.planner import Planner
 from ai_cto.actions.registry import ActionRegistry
-from ai_cto.config import GEMINI_API_KEY
+from ai_cto.config import NVIDIA_API_KEY
 
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not set in .env")
+if not NVIDIA_API_KEY:
+    raise ValueError("NVIDIA_API_KEY not set in .env")
 
 
 class AIAgent:
@@ -14,26 +14,29 @@ class AIAgent:
         self.history: list[dict] = []
         self.max_steps = max_steps
     
+    def _extract_repo(self) -> str:
+        import re
+        # Find all occurrences of owner/repo pattern
+        matches = re.findall(r'([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)', self.goal)
+        # Return the last match (usually the actual repo, not "CI/CD" or similar)
+        if matches:
+            return matches[-1]
+        return ""
+    
     def run(self) -> dict:
         print(f"Starting AI Assistant for: {self.goal}")
         print("=" * 50)
         
         last_result = {}
+        target_repo = self._extract_repo()
         
         for step in range(self.max_steps):
             available_actions = ActionRegistry.get_actions()
             
-            required_input = {}
-            if step == 0 and "analyze" in self.goal.lower() or "fetch" in self.goal.lower():
-                import re
-                match = re.search(r'([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)', self.goal)
-                if match:
-                    required_input = {"repo": match.group(1)}
-            
-            decision = self.planner.decide(self.goal, available_actions, self.history, required_input)
+            # Only ask LLM for action, not input
+            decision = self.planner.decide_action_only(self.goal, available_actions, self.history)
             
             print(f"\nStep {step + 1}: {decision.action}")
-            print(f"Input: {decision.input}")
             
             if decision.done:
                 print("Done!")
@@ -41,7 +44,17 @@ class AIAgent:
             
             try:
                 action_class = ActionRegistry.get(decision.action)
-                action = action_class(**decision.input)
+                
+                # Build input based on action type - always use extracted repo
+                action_input = {}
+                if decision.action == "fetch_workflows":
+                    action_input = {"repo": target_repo}
+                elif decision.action == "comment_on_pr":
+                    action_input = {"repo": target_repo}
+                
+                print(f"Input: {action_input}")
+                
+                action = action_class(**action_input)
                 
                 result = action.run(**last_result)
                 last_result = result
@@ -49,7 +62,7 @@ class AIAgent:
                 self.history.append({
                     "step": step + 1,
                     "action": decision.action,
-                    "input": decision.input,
+                    "input": action_input,
                     "result": result
                 })
                 

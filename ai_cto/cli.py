@@ -2,7 +2,8 @@ import typer
 import asyncio
 from typing import Optional
 from ai_cto.agent import AIAgent
-from ai_cto.config import GEMINI_API_KEY, validate
+from ai_cto.config import NVIDIA_API_KEY, validate
+from ai_cto.utils import Loader
 
 app = typer.Typer()
 
@@ -43,10 +44,16 @@ Examples:
 
 @app.command()
 def analyze(repo: str):
-    validate(github_required=True)
+    validate()
     goal = f"Analyze CI/CD workflows for {repo} and suggest improvements"
     agent = AIAgent(goal)
-    result = agent.run()
+    
+    loader = Loader("Analyzing workflows")
+    loader.start()
+    try:
+        result = agent.run()
+    finally:
+        loader.stop()
     
     print("\n" + "=" * 50)
     print("FINAL RESULTS")
@@ -73,7 +80,13 @@ def pr_review(repo: str, pr_number: int, message: Optional[str] = None):
     if not message:
         goal = f"Review PR #{pr_number} on {repo} and suggest improvements"
         agent = AIAgent(goal)
-        result = agent.run()
+        
+        loader = Loader("Reviewing PR")
+        loader.start()
+        try:
+            result = agent.run()
+        finally:
+            loader.stop()
         
         for step in result["history"]:
             if "result" in step and "suggestions" in step["result"]:
@@ -124,7 +137,14 @@ def run_chat():
             repo = user_input[8:].strip()
             print(f"\nAnalyzing {repo}...")
             agent = AIAgent(f"Analyze CI/CD workflows for {repo} and suggest improvements")
-            result = agent.run()
+            
+            loader = Loader("Analyzing")
+            loader.start()
+            try:
+                result = agent.run()
+            finally:
+                loader.stop()
+            
             print("\nResults:")
             for step in result["history"]:
                 if "result" in step:
@@ -134,17 +154,17 @@ def run_chat():
                             print(f"  • {s}")
             continue
         
-        print("\nAssistant> ", end="", flush=True)
-        
+        loader = Loader("Thinking")
+        loader.start()
         try:
             response = agent.chat(user_input)
-            print(response)
-            
-            conversation.append({"role": "user", "content": user_input})
-            conversation.append({"role": "assistant", "content": response})
-            
-        except Exception as e:
-            print(f"\nError: {e}")
+        finally:
+            loader.stop()
+        
+        print("\n" + response)
+        
+        conversation.append({"role": "user", "content": user_input})
+        conversation.append({"role": "assistant", "content": response})
 
 
 @app.command()

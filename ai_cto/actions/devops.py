@@ -1,11 +1,6 @@
-from pydantic import BaseModel
 import yaml
 from ai_cto.actions.base import Action
-from ai_cto.config import GEMINI_API_KEY
-import google.generativeai as genai
-
-
-genai.configure(api_key=GEMINI_API_KEY)
+from ai_cto.llm import LLMClient
 
 
 class AnalyzeWorkflows(Action):
@@ -65,7 +60,7 @@ class AnalyzeWorkflows(Action):
 
 class SuggestImprovements(Action):
     name: str = "suggest_improvements"
-    description: str = "Use Gemini to generate CI/CD improvement suggestions"
+    description: str = "Use AI to generate CI/CD improvement suggestions"
     
     def run(self, **kwargs) -> dict:
         issues = kwargs.get("issues", [])
@@ -87,10 +82,10 @@ Issues found:
 
 Provide 3-5 specific, actionable bullet point suggestions. Keep each concise."""
 
-        model = genai.GenerativeModel("gemini-3.0-flash")
-        response = model.generate_content(prompt)
+        llm = LLMClient()
+        response = llm.generate(prompt)
         
-        suggestions = [s.strip().lstrip("- ").lstrip("* ") for s in response.text.strip().split("\n") if s.strip()]
+        suggestions = [s.strip().lstrip("- ").lstrip("* ") for s in response.strip().split("\n") if s.strip()]
         
         print(f"DEBUG: Generated {len(suggestions)} suggestions")
         return {"suggestions": suggestions}
