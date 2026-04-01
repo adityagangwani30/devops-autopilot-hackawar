@@ -1,5 +1,11 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from openai import OpenAI
-from typing import Optional
+from openai.types.chat import ChatCompletionMessageParam
+from typing import Optional, Iterator
 from ai_cto.config import NVIDIA_API_KEY
 
 
@@ -20,7 +26,7 @@ class LLMClient:
             max_tokens=max_tokens,
             stream=False
         )
-        return completion.choices[0].message.content
+        return completion.choices[0].message.content or ""
     
     def generate_with_thinking(self, prompt: str, temperature: float = 0.5, max_tokens: int = 8192) -> str:
         completion = self.client.chat.completions.create(
@@ -35,9 +41,9 @@ class LLMClient:
             },
             stream=False
         )
-        return completion.choices[0].message.content
+        return completion.choices[0].message.content or ""
     
-    def chat(self, messages: list[dict], temperature: float = 0.5, max_tokens: int = 4096) -> str:
+    def chat(self, messages: list[ChatCompletionMessageParam], temperature: float = 0.5, max_tokens: int = 4096) -> str:
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -46,4 +52,17 @@ class LLMClient:
             max_tokens=max_tokens,
             stream=False
         )
-        return completion.choices[0].message.content
+        return completion.choices[0].message.content or ""
+    
+    def stream_chat(self, messages: list[ChatCompletionMessageParam], temperature: float = 0.5, max_tokens: int = 4096) -> Iterator[str]:
+        completion = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=temperature,
+            top_p=1,
+            max_tokens=max_tokens,
+            stream=True
+        )
+        for chunk in completion:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
