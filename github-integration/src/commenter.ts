@@ -64,6 +64,45 @@ ${validSuggestions.map(suggestion => `- ${suggestion}`).join('\n')}
     },
     
     /**
+     * Post a raw markdown comment to a pull request.
+     * Used by the PR bot feature (ai-comment-generator).
+     */
+    async postRawComment(
+      owner: string,
+      repo: string,
+      pullNumber: number,
+      body: string
+    ): Promise<void> {
+      try {
+        const existingComment = await this.findBotComment(
+          owner,
+          repo,
+          pullNumber,
+          'AI-Powered PR Review',
+        );
+
+        if (existingComment) {
+          await octokit.issues.updateComment({
+            owner,
+            repo,
+            comment_id: existingComment.id,
+            body,
+          });
+        } else {
+          await octokit.issues.createComment({
+            owner,
+            repo,
+            issue_number: pullNumber,
+            body,
+          });
+        }
+      } catch (error) {
+        console.error('Error posting raw comment to PR:', error);
+        throw error;
+      }
+    },
+
+    /**
      * Find a recent comment made by this bot on the PR
      * This helps avoid duplicate comments
      */
@@ -72,29 +111,39 @@ ${validSuggestions.map(suggestion => `- ${suggestion}`).join('\n')}
       repo: string,
       pullNumber: number
     ): Promise<{id: number} | null> {
+      return this.findBotComment(owner, repo, pullNumber, 'CI/CD optimization bot');
+    },
+
+    /**
+     * Generic helper: find a bot comment that contains the given signature.
+     */
+    async findBotComment(
+      owner: string,
+      repo: string,
+      pullNumber: number,
+      signature: string
+    ): Promise<{id: number} | null> {
       try {
         const response = await octokit.issues.listComments({
           owner,
           repo,
           issue_number: pullNumber
         });
-        
-        // Look for comments that contain our bot's signature
+
         for (const comment of response.data) {
           if (
             comment.body &&
-            comment.body.includes('CI/CD optimization bot') &&
-            // Only consider comments from the last hour to allow updates
+            comment.body.includes(signature) &&
             new Date(comment.updated_at).getTime() > Date.now() - 3600000
           ) {
             return { id: comment.id };
           }
         }
-        
+
         return null;
       } catch (error) {
         console.error('Error checking for existing bot comments:', error);
-        return null; // If we can't check, proceed to create new comment
+        return null;
       }
     }
   };
