@@ -11,7 +11,7 @@ export function HeroSection() {
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_50%_30%,rgba(14,165,233,0.15),transparent_70%)]" />
 
       <div className="relative z-10 mx-auto max-w-5xl text-center">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 px-4 py-2">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#0ea5e9]/10 px-4 py-2">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#0ea5e9] opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-[#0ea5e9]" />

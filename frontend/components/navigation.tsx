@@ -15,8 +15,8 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-4xl" id="main-nav">
-      <div className="bg-[#111111] border border-[#222222] rounded-full px-6 py-3 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50" id="main-nav">
+      <div className="w-full bg-[#080c10]/0 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-8">
           {navItems.map((item) => (
             <Link
@@ -50,7 +50,7 @@ export function Navigation() {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#111111] border border-[#222222] mt-2 rounded-2xl p-4">
+        <div className="md:hidden bg-[#111111] mt-2 rounded-2xl p-4">
           <div className="flex flex-col gap-4">
             {navItems.map((item) => (
               <Link

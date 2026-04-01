@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #0a0a0a;
+  --background: #080c10;
   --foreground: #ffffff;
   --card: #111111;
   --card-foreground: #ffffff;
@@ -27,7 +27,7 @@
 }
 
 .dark {
-  --background: #0a0a0a;
+  --background: #080c10;
   --foreground: #ffffff;
   --card: #111111;
   --card-foreground: #ffffff;
@@ -77,11 +77,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    border: none;
   }
   body {
     @apply bg-background text-foreground;
-    background: #0a0a0a;
+    background: #080c10;
     color: #ffffff;
     margin: 0;
     padding: 0;

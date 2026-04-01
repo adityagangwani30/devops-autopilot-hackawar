@@ -1,4 +1,4 @@
-import { AnimatedBackground } from "@/components/animated-background"
+import { ThreadsBackground } from "@/components/threads-background"
 import { Navigation } from "@/components/navigation"
 import { HeroSection } from "@/components/hero-section"
 import { ChatbotSection } from "@/components/chatbot-section"
@@ -10,16 +10,18 @@ import { ChatbotWidget } from "@/components/chatbot-widget"
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#0a0a0a] text-white">
-      <AnimatedBackground />
+    <main className="relative min-h-screen overflow-x-hidden bg-[#080c10] text-white">
+      <ThreadsBackground />
       <div className="relative z-10">
         <Navigation />
-        <HeroSection />
-        <ChatbotSection />
-        <KnowledgeGraph />
-        <DashboardShowcase />
-        <TeamSection />
-        <Footer />
+        <div className="pt-16">
+          <HeroSection />
+          <ChatbotSection />
+          <KnowledgeGraph />
+          <DashboardShowcase />
+          <TeamSection />
+          <Footer />
+        </div>
       </div>
       <ChatbotWidget />
     </main>
