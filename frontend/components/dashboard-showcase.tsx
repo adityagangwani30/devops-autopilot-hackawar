@@ -12,7 +12,14 @@ import {
   Cog,
   ArrowRight,
   Github,
-  Activity
+  Activity,
+  GitBranch,
+  GitPullRequest,
+  GitCommit,
+  Cpu,
+  HardDrive,
+  Network,
+  Gauge
 } from "lucide-react"
 import Link from "next/link"
 
@@ -46,18 +53,6 @@ const features = [
     icon: MessageSquare,
     title: "Natural Language Chat",
     description: 'Talk to your infrastructure in plain English. Ask "Why did the auth service fail?" and get an actionable answer — not a wall of YAML.',
-  },
-  {
-    number: "06",
-    icon: Github,
-    title: "GitHub Integration",
-    description: "Seamless repository syncing. Track commits, branches, and PRs in real-time. Get alerts on code changes that impact your infrastructure.",
-  },
-  {
-    number: "07",
-    icon: Activity,
-    title: "Observability",
-    description: "Real-time metrics and logging. Monitor CPU, memory, disk I/O, and network throughput. Visualize your system's health at a glance.",
   },
 ]
 
@@ -109,13 +104,13 @@ export function DashboardShowcase() {
         {/* THE SOLUTION */}
         <div id="solution" className="mb-24 scroll-mt-24">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#D838CB]/30 bg-[#D838CB]/10 mb-4">
-              <Cog size={14} className="text-[#D838CB] animate-spin" style={{ animationDuration: "3s" }} />
-              <span className="text-[#D838CB] text-sm font-medium">The Solution</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 mb-4">
+              <Cog size={14} className="text-[#0ea5e9] animate-spin" style={{ animationDuration: "3s" }} />
+              <span className="text-[#0ea5e9] text-sm font-medium">The Solution</span>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
               The Core Loop:{" "}
-              <span className="text-[#D838CB]">Observe → Reason → Act</span>
+              <span className="text-[#0ea5e9]">Observe → Reason → Act</span>
             </h2>
             <p className="text-lg text-[#888888] max-w-2xl mx-auto">
               An intelligent agent that watches your pipeline 24/7, understands context like a senior engineer, and takes action — with your permission.
@@ -126,7 +121,7 @@ export function DashboardShowcase() {
             <div className="bg-[#111111] border border-[#222222] rounded-3xl p-6 md:p-10">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] gap-4 md:gap-6 items-start">
                 <div className="text-center group">
-                  <div className="w-16 h-16 rounded-2xl bg-[#D838CB] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0ea5e9] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
                     <Eye size={28} className="text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-white mb-2">Observe</h3>
@@ -134,14 +129,14 @@ export function DashboardShowcase() {
                 </div>
 
                 <div className="hidden md:flex items-center justify-center pt-5">
-                  <ArrowRight size={32} className="text-[#D838CB]/60" />
+                  <ArrowRight size={32} className="text-[#0ea5e9]/60" />
                 </div>
                 <div className="md:hidden flex justify-center py-1">
-                  <ArrowRight size={24} className="text-[#D838CB]/60 rotate-90" />
+                  <ArrowRight size={24} className="text-[#0ea5e9]/60 rotate-90" />
                 </div>
 
                 <div className="text-center group">
-                  <div className="w-16 h-16 rounded-2xl bg-[#D838CB] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0ea5e9] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
                     <Brain size={28} className="text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-white mb-2">Reason</h3>
@@ -149,14 +144,14 @@ export function DashboardShowcase() {
                 </div>
 
                 <div className="hidden md:flex items-center justify-center pt-5">
-                  <ArrowRight size={32} className="text-[#D838CB]/60" />
+                  <ArrowRight size={32} className="text-[#0ea5e9]/60" />
                 </div>
                 <div className="md:hidden flex justify-center py-1">
-                  <ArrowRight size={24} className="text-[#D838CB]/60 rotate-90" />
+                  <ArrowRight size={24} className="text-[#0ea5e9]/60 rotate-90" />
                 </div>
 
                 <div className="text-center group">
-                  <div className="w-16 h-16 rounded-2xl bg-[#D838CB] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0ea5e9] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
                     <Zap size={28} className="text-white" />
                   </div>
                   <h3 className="text-lg font-bold text-white mb-2">Act</h3>
@@ -167,15 +162,117 @@ export function DashboardShowcase() {
           </div>
         </div>
 
+        {/* GITHUB INTEGRATION SECTION */}
+        <div className="mb-16">
+          <div className="bg-[#111111] border border-[#0ea5e9]/30 rounded-2xl p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+                  <Github size={14} className="text-[#0ea5e9]" />
+                  <span className="text-sm font-medium text-[#0ea5e9]">GitHub Integration</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  Seamless Repository Syncing
+                </h2>
+                <p className="text-lg text-[#888888] mb-6 leading-relaxed">
+                  Connect your GitHub repositories and get real-time visibility into commits, branches, pull requests, and deployments. 
+                  The AI monitors code changes and alerts you to infrastructure-impacting commits before they cause issues.
+                </p>
+                <ul className="space-y-3 text-[#aaaaaa]">
+                  <li className="flex items-center gap-3">
+                    <GitBranch size={18} className="text-[#0ea5e9]" />
+                    <span>Track all branches and their deployment status</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <GitPullRequest size={18} className="text-[#0ea5e9]" />
+                    <span>Monitor PRs and their impact on production</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <GitCommit size={18} className="text-[#0ea5e9]" />
+                    <span>Instant alerts on critical commits</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex justify-center">
+                <div className="w-full max-w-sm">
+                  <img 
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Crect fill='%23111111' width='360' height='240' rx='8'/%3E%3Crect fill='%231a1a1a' x='16' y='16' width='328' height='60' rx='6'/%3E%3Ccircle fill='%2322c55e' cx='36' cy='46' r='6'/%3E%3Crect fill='%23222' x='52' y='38' width='160' height='14' rx='3'/%3E%3Crect fill='%23222' x='52' y='56' width='100' height='10' rx='2'/%3E%3Crect fill='%231a1a1a' x='16' y='88' width='328' height='60' rx='6'/%3E%3Ccircle fill='%230ea5e9' cx='36' cy='118' r='6'/%3E%3Crect fill='%23222' x='52' y='110' width='140' height='14' rx='3'/%3E%3Crect fill='%23222' x='52' y='128' width='180' height='10' rx='2'/%3E%3Crect fill='%231a1a1a' x='16' y='160' width='328' height='60' rx='6'/%3E%3Ccircle fill='%23a855f7' cx='36' cy='190' r='6'/%3E%3Crect fill='%23222' x='52' y='182' width='120' height='14' rx='3'/%3E%3Crect fill='%23222' x='52' y='200' width='200' height='10' rx='2'/%3E%3C/svg%3E"
+                    alt="GitHub Integration UI"
+                    style={{ 
+                      borderRadius: '12px', 
+                      border: '1px solid #0ea5e9',
+                      maxWidth: '100%',
+                      height: 'auto'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* OBSERVABILITY SECTION */}
+        <div className="mb-16">
+          <div className="bg-[#111111] border border-[#0ea5e9]/30 rounded-2xl p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="order-2 md:order-1 flex justify-center">
+                <div className="w-full max-w-sm">
+                  <img 
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Crect fill='%23111111' width='360' height='240' rx='8'/%3E%3Ctext fill='%23ffffff' x='20' y='30' font-family='system-ui' font-size='12' font-weight='bold'%3EMetrics Dashboard%3C/text%3E%3Crect fill='%231a1a1a' x='16' y='50' width='80' height='60' rx='4'/%3E%3Crect fill='%230ea5e9' x='16' y='80' width='60' height='28' rx='2'/%3E%3Ctext fill='%23888' x='16' y='125' font-family='system-ui' font-size='10'%3ECPU%3C/text%3E%3Crect fill='%231a1a1a' x='108' y='50' width='80' height='60' rx='4'/%3E%3Crect fill='%2322c55e' x='108' y='65' width='65' height='43' rx='2'/%3E%3Ctext fill='%23888' x='108' y='125' font-family='system-ui' font-size='10'%3EMemory%3C/text%3E%3Crect fill='%231a1a1a' x='200' y='50' width='80' height='60' rx='4'/%3E%3Crect fill='%23f59e0b' x='200' y='72' width='55' height='36' rx='2'/%3E%3Ctext fill='%23888' x='200' y='125' font-family='system-ui' font-size='10'%3EDisk%3C/text%3E%3Crect fill='%231a1a1a' x='264' y='50' width='80' height='60' rx='4'/%3E%3Crect fill='%23a855f7' x='264' y='80' width='60' height='28' rx='2'/%3E%3Ctext fill='%23888' x='264' y='125' font-family='system-ui' font-size='10'%3ENetwork%3C/text%3E%3Crect fill='%231a1a1a' x='16' y='140' width='328' height='80' rx='4'/%3E%3Cpath fill='none' stroke='%230ea5e9' stroke-width='2' d='M20 200 L50 180 L80 190 L110 170 L140 185 L170 165 L200 175 L230 160 L260 170 L290 155 L320 165'/%3E%3C/svg%3E"
+                    alt="Observability Dashboard"
+                    style={{ 
+                      borderRadius: '12px', 
+                      border: '1px solid #0ea5e9',
+                      maxWidth: '100%',
+                      height: 'auto'
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="order-1 md:order-2">
+                <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+                  <Activity size={14} className="text-[#0ea5e9]" />
+                  <span className="text-sm font-medium text-[#0ea5e9]">Observability</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  Real-Time Metrics & Logging
+                </h2>
+                <p className="text-lg text-[#888888] mb-6 leading-relaxed">
+                  Gain complete visibility into your infrastructure with real-time metrics, logs, and traces. 
+                  Monitor CPU, memory, disk I/O, and network throughput. Visualize your system's health at a glance and spot issues before they escalate.
+                </p>
+                <ul className="space-y-3 text-[#aaaaaa]">
+                  <li className="flex items-center gap-3">
+                    <Gauge size={18} className="text-[#0ea5e9]" />
+                    <span>Real-time CPU, memory, and disk metrics</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Network size={18} className="text-[#0ea5e9]" />
+                    <span>Network throughput monitoring</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <HardDrive size={18} className="text-[#0ea5e9]" />
+                    <span>Historical data with trend analysis</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Cpu size={18} className="text-[#0ea5e9]" />
+                    <span>Custom alerts and thresholds</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* FEATURES GRID */}
         <div id="features" className="scroll-mt-24">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
               Built for{" "}
-              <span className="text-[#D838CB]">real-world DevOps</span>
+              <span className="text-[#0ea5e9]">real-world DevOps</span>
             </h2>
             <p className="text-lg text-[#888888] max-w-2xl mx-auto">
-              Seven core capabilities that make DevOps Autopilot your most reliable team member.
+              Five core capabilities that make DevOps Autopilot your most reliable team member.
             </p>
           </div>
 
@@ -183,14 +280,14 @@ export function DashboardShowcase() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-[#111111] border border-[#222222] rounded-2xl p-7 hover:border-[#D838CB] transition-colors"
+                className="bg-[#111111] border border-[#222222] rounded-2xl p-7 hover:border-[#0ea5e9] transition-colors"
               >
                 <div className="flex items-center gap-4 mb-5">
                   <span className="text-xs font-mono font-bold text-[#555555] tracking-wider">
                     {feature.number}
                   </span>
                   <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] flex items-center justify-center">
-                    <feature.icon size={22} className="text-[#D838CB]" />
+                    <feature.icon size={22} className="text-[#0ea5e9]" />
                   </div>
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">
@@ -204,7 +301,7 @@ export function DashboardShowcase() {
 
             <div className="bg-[#111111] border border-[#222222] rounded-2xl p-7 flex flex-col items-center justify-center text-center border-dashed">
               <div className="w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4">
-                <ArrowRight size={24} className="text-[#D838CB]" />
+                <ArrowRight size={24} className="text-[#0ea5e9]" />
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">See it in action</h3>
               <p className="text-sm text-[#888888] mb-5">
@@ -212,7 +309,7 @@ export function DashboardShowcase() {
               </p>
               <Link
                 href="/dashboard"
-                className="px-6 py-2.5 rounded-full text-sm font-semibold bg-[#D838CB] text-white hover:scale-[1.03] transition-transform"
+                className="px-6 py-2.5 rounded-full text-sm font-semibold bg-[#0ea5e9] text-white hover:scale-[1.03] transition-transform"
               >
                 Launch Dashboard →
               </Link>

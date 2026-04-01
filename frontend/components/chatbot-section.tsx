@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { MessageSquare, Terminal, Shield, Zap } from "lucide-react"
 
 export function ChatbotSection() {
@@ -7,12 +6,12 @@ export function ChatbotSection() {
       <div className="mx-auto max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#D838CB]/30 bg-[#D838CB]/10">
-              <MessageSquare size={14} className="text-[#D838CB]" />
-              <span className="text-sm font-medium text-[#D838CB]">AI Assistant</span>
+            <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+              <MessageSquare size={14} className="text-[#0ea5e9]" />
+              <span className="text-sm font-medium text-[#0ea5e9]">AI Assistant</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Your Intelligent Infrastructure Partner
+              Meet Your Autonomous AI CTO
             </h2>
             <p className="text-lg text-[#888888] mb-6 leading-relaxed">
               Meet your new AI-powered troubleshooting companion. Our intelligent assistant helps you diagnose issues, 
@@ -22,31 +21,67 @@ export function ChatbotSection() {
             </p>
             <ul className="space-y-3 text-[#aaaaaa]">
               <li className="flex items-center gap-3">
-                <Zap size={18} className="text-[#D838CB]" />
+                <Zap size={18} className="text-[#0ea5e9]" />
                 <span>Instant answers to complex infrastructure questions</span>
               </li>
               <li className="flex items-center gap-3">
-                <Terminal size={18} className="text-[#D838CB]" />
+                <Terminal size={18} className="text-[#0ea5e9]" />
                 <span>Natural language interface — no CLI expertise required</span>
               </li>
               <li className="flex items-center gap-3">
-                <Shield size={18} className="text-[#D838CB]" />
+                <Shield size={18} className="text-[#0ea5e9]" />
                 <span>Context-aware suggestions based on your specific setup</span>
               </li>
             </ul>
           </div>
           <div className="flex justify-center">
             <div className="w-full max-w-md">
-              <img 
-                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Crect fill='%23111111' width='400' height='300' rx='12'/%3E%3Crect fill='%231a1a1a' x='20' y='20' width='360' height='200' rx='8'/%3E%3Ccircle fill='%23D838CB' cx='40' cy='40' r='12'/%3E%3Crect fill='%23222222' x='60' y='32' width='200' height='16' rx='4'/%3E%3Crect fill='%23151515' x='20' y='70' width='260' height='24' rx='4'/%3E%3Crect fill='%23151515' x='20' y='100' width='300' height='24' rx='4'/%3E%3Crect fill='%23151515' x='20' y='130' width='240' height='24' rx='4'/%3E%3Crect fill='%23D838CB' x='20' y='240' width='80' height='32' rx='4'/%3E%3Crect fill='%23222222' x='110' y='240' width='210' height='32' rx='4'/%3E%3Ctext fill='%23ffffff' x='40' y='52' font-family='system-ui' font-size='12' font-weight='bold'%3EAI CTO Assistant%3C/text%3E%3Ctext fill='%23888888' x='40' y='170' font-family='system-ui' font-size='14'%3EHow's the auth service doing?%3C/text%3E%3Ctext fill='%23D838CB' x='40' y='210' font-family='system-ui' font-size='14'%3EResponse: Healthy. All checks passing.%3C/text%3E%3C/svg%3E" 
-                alt="AI Chatbot Interface"
-                style={{ 
-                  borderRadius: '12px', 
-                  border: '2px solid #D838CB',
-                  maxWidth: '100%',
-                  height: 'auto'
-                }}
-              />
+              <div className="rounded-2xl border-2 border-[#0ea5e9] bg-[#111111] overflow-hidden" style={{ boxShadow: '0 8px 32px rgba(14, 165, 233, 0.15)' }}>
+                <div className="bg-[#1a1a1a] px-4 py-3 rounded-t-xl flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#0ea5e9] flex items-center justify-center">
+                    <MessageSquare size={14} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="text-white font-medium text-sm">AI CTO Assistant</div>
+                    <div className="text-gray-500 text-xs flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      Online now
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 space-y-4">
+                  <div className="flex justify-start">
+                    <div className="bg-[#1f2937] text-gray-200 px-4 py-3 rounded-2xl rounded-bl-sm max-w-[85%] text-sm">
+                      How&apos;s the auth service doing?
+                      <div className="text-gray-500 text-xs mt-1">10:15 AM</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <div className="bg-[#0ea5e9] text-white px-4 py-3 rounded-2xl rounded-br-sm max-w-[85%] text-sm">
+                      Response: Healthy. All checks passing.
+                      <div className="text-blue-200 text-xs mt-1">10:16 AM</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-3 border-t border-[#222222]">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="text" 
+                      placeholder="Ask about system health..." 
+                      className="flex-1 bg-[#1a1a1a] border border-[#333333] rounded-full px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#0ea5e9]"
+                      suppressHydrationWarning
+                    />
+                    <button className="w-10 h-10 rounded-full bg-[#0ea5e9] flex items-center justify-center flex-shrink-0" suppressHydrationWarning>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/hero-section"
 import { ChatbotSection } from "@/components/chatbot-section"
 import { KnowledgeGraph } from "@/components/knowledge-graph"
 import { DashboardShowcase } from "@/components/dashboard-showcase"
+import { TeamSection } from "@/components/team-section"
 import { Footer } from "@/components/footer"
 import { ChatbotWidget } from "@/components/chatbot-widget"
 
@@ -17,6 +18,7 @@ export default function Home() {
         <ChatbotSection />
         <KnowledgeGraph />
         <DashboardShowcase />
+        <TeamSection />
         <Footer />
       </div>
       <ChatbotWidget />
