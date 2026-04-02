@@ -5,3 +5,4 @@ frontend/out
 backend/github-integration/node_modules
 backend/github-integration/dist
 backend/github-integration/.env
+*/.env
