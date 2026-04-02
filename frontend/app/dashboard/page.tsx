@@ -41,8 +41,8 @@ export default function OverviewPage() {
     color: "teal",
   }))
 
-  const maxPushes = Math.max(...(insights?.weeklyPushFrequency.map((item) => item.pushes) || [1]), 1)
-  const maxGraphCount = Math.max(...(insights?.graphComposition.map((item) => item.count) || [1]), 1)
+  const maxPushes = Math.max(...(insights?.weeklyPushFrequency?.map((item: { pushes: number }) => item.pushes) || [1]), 1)
+  const maxGraphCount = Math.max(...(insights?.graphComposition?.map((item: { count: number }) => item.count) || [1]), 1)
 
   return (
     <>
@@ -64,7 +64,7 @@ export default function OverviewPage() {
       <div className="dash-content">
         {error ? (
           <div className="dash-card" style={{ padding: "16px 22px", background: "rgba(248,113,113,.08)", borderColor: "rgba(248,113,113,.2)" }}>
-            <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error}</p>
+            <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error?.message || String(error)}</p>
           </div>
         ) : null}
 
@@ -109,7 +109,7 @@ export default function OverviewPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {insights.recentPushes.map((push) => (
+                      {insights.recentPushes.map((push: { id: string; repoFullName: string; branch: string; commits: number; pushedAt: string }) => (
                         <tr key={push.id}>
                           <td>{push.repoFullName}</td>
                           <td>{push.branch}</td>
@@ -145,7 +145,7 @@ export default function OverviewPage() {
                       Knowledge Graph Composition
                     </p>
                     <div style={{ marginTop: "12px", display: "grid", gap: "10px" }}>
-                      {(insights?.graphComposition || []).slice(0, 5).map((item) => (
+                      {(insights?.graphComposition || []).slice(0, 5).map((item: { type: string; count: number }) => (
                         <div key={item.type} className="freq-item">
                           <span className="freq-label">{item.type.replace("_", " ")}</span>
                           <div className="freq-bar-track">
@@ -163,7 +163,7 @@ export default function OverviewPage() {
                     </p>
                     <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       {(insights?.languageDistribution || []).length > 0 ? (
-                        insights?.languageDistribution.map((item) => (
+                        insights?.languageDistribution.map((item: { language: string; count: number }) => (
                           <span key={item.language} className="dash-card-badge">
                             {item.language} ({item.count})
                           </span>
@@ -192,7 +192,7 @@ export default function OverviewPage() {
                 <div className="dash-card shimmer" style={{ minHeight: "180px" }} />
               ) : (
                 <div className="freq-list">
-                  {(insights?.weeklyPushFrequency || []).map((day) => (
+                  {(insights?.weeklyPushFrequency || []).map((day: { date: string; label: string; pushes: number; commits: number }) => (
                     <div key={day.date} className="freq-item">
                       <span className="freq-label">{day.label}</span>
                       <div className="freq-bar-track">
@@ -248,7 +248,7 @@ export default function OverviewPage() {
                 </div>
               ) : insights?.cves && insights.cves.length > 0 ? (
                 <div className="cve-list">
-                  {insights.cves.map((cve) => (
+                  {insights.cves.map((cve: { id: string; severity: string; package: string; version: string; description: string; link: string; published: string }) => (
                     <div key={cve.id} className={`cve-item severity-${cve.severity.toLowerCase()}`}>
                       <div className="cve-header">
                         <span className={`cve-id ${getCveSeverityClass(cve.severity)}`}>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { ProcessedKnowledgeGraph } from "@/components/dashboard/ProcessedKnowledgeGraph"
 import type {
   DashboardInsights,
@@ -83,9 +84,9 @@ export default function AnalyticsPage() {
     color: "teal",
   }))
 
-  const maxPushes = Math.max(...(insights?.weeklyPushFrequency.map((item) => item.pushes) || [1]), 1)
-  const maxGraphCount = Math.max(...(insights?.graphComposition.map((item) => item.count) || [1]), 1)
-  const maxRepositoryScore = Math.max(...(insights?.topRepositories.map((item) => item.score) || [1]), 1)
+  const maxPushes = Math.max(...(insights?.weeklyPushFrequency?.map((item: { pushes: number }) => item.pushes) || [1]), 1)
+  const maxGraphCount = Math.max(...(insights?.graphComposition?.map((item: { count: number }) => item.count) || [1]), 1)
+  const maxRepositoryScore = Math.max(...(insights?.topRepositories?.map((item: { score: number }) => item.score) || [1]), 1)
 
   return (
     <>
@@ -114,7 +115,7 @@ export default function AnalyticsPage() {
               borderColor: "rgba(248,113,113,.2)",
             }}
           >
-            <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error}</p>
+            <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error?.message || String(error)}</p>
           </div>
         ) : null}
 
@@ -134,7 +135,7 @@ export default function AnalyticsPage() {
                 )}
               </div>
             </div>
-          )}
+          ))}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.7fr) minmax(300px, 1fr)", gap: "18px", alignItems: "start" }}>
@@ -193,12 +194,12 @@ export default function AnalyticsPage() {
                           <p style={{ fontSize: ".66rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
                             {key}
                           </p>
-                        >
-                        <p style={{ fontSize: ".74rem", color: "var(--text-primary)", marginTop: "4px" }}>
-                          {typeof value === "string" ? value : JSON.stringify(value)}
-                        </p>
-                      </div>
-                    ))}
+                          <p style={{ fontSize: ".74rem", color: "var(--text-primary)", marginTop: "4px" }}>
+                            {typeof value === "string" ? value : JSON.stringify(value)}
+                          </p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 ) : (
                   <p style={{ color: "var(--text-muted)", fontSize: ".74rem" }}>
@@ -217,7 +218,7 @@ export default function AnalyticsPage() {
                   <div className="dash-card shimmer" style={{ minHeight: "180px" }} />
                 ) : (
                   <div className="freq-list">
-                    {(insights?.graphComposition || []).map((item) => (
+                    {(insights?.graphComposition || []).map((item: { type: string; count: number }) => (
                       <div key={item.type} className="freq-item">
                         <span className="freq-label">{item.type.replace("_", " ")}</span>
                         <div className="freq-bar-track">
@@ -226,7 +227,7 @@ export default function AnalyticsPage() {
                         <span className="freq-value">{item.count}</span>
                       </div>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </div>
@@ -242,7 +243,7 @@ export default function AnalyticsPage() {
                   <div className="dash-card shimmer" style={{ minHeight: "220px" }} />
                 ) : (
                   <div className="freq-list">
-                    {(insights?.weeklyPushFrequency || []).map((item) => (
+                    {(insights?.weeklyPushFrequency || []).map((item: { date: string; label: string; pushes: number; commits: number }) => (
                       <div key={item.date} className="freq-item">
                         <span className="freq-label">{item.label}</span>
                         <div className="freq-bar-track">
@@ -251,7 +252,7 @@ export default function AnalyticsPage() {
                         <span className="freq-value">{item.pushes} pushes / {item.commits} commits</span>
                       </div>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </div>
@@ -265,7 +266,7 @@ export default function AnalyticsPage() {
                   <div className="dash-card shimmer" style={{ minHeight: "220px" }} />
                 ) : (
                   <div className="freq-list">
-                    {(insights?.topRepositories || []).map((repository) => (
+                    {(insights?.topRepositories || []).map((repository: { repoFullName: string; openIssues: number; score: number; ciFindings: number; suggestions: number }) => (
                       <div key={repository.repoFullName} className="freq-item">
                         <span className="freq-label">{repository.repoFullName}</span>
                         <div className="freq-bar-track">
@@ -276,7 +277,7 @@ export default function AnalyticsPage() {
                         </span>
                       </div>
                     ))}
-                  </div
+                  </div>
                 )}
               </div>
             </div>
@@ -293,7 +294,7 @@ export default function AnalyticsPage() {
               ) : !insights || insights.topRepositories.length === 0 ? (
                 <div style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
                   No analyzed repositories are available yet.
-                </div
+                </div>
               ) : (
                 <div className="table-wrap">
                   <table>
@@ -310,7 +311,15 @@ export default function AnalyticsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {insights.topRepositories.map((repository) => (
+                      {insights.topRepositories.map((repository: { 
+                        repoFullName: string; 
+                        status: string; 
+                        primaryLanguage: string | null; 
+                        workflows: number; 
+                        ciFindings: number; 
+                        suggestions: number; 
+                        updatedAt: string 
+                      }) => (
                         <tr key={repository.repoFullName}>
                           <td>{repository.repoFullName}</td>
                           <td>
@@ -318,18 +327,18 @@ export default function AnalyticsPage() {
                               {formatStatus(repository.status)}
                             </span>
                           </td>
-                        </td>
-                        <td>{repository.primaryLanguage || "Unknown"}</td>
-                        <td>{repository.workflows}</td>
-                        <td>{repository.ciFindings}</td>
-                        <td>{repository.suggestions}</td>
-                        <td>{new Date(repository.updatedAt).toLocaleDateString()}</td>
-                      </tr>
-                    )}
+                          <td>{repository.primaryLanguage || "Unknown"}</td>
+                          <td>{repository.workflows}</td>
+                          <td>{repository.ciFindings}</td>
+                          <td>{repository.suggestions}</td>
+                          <td>{new Date(repository.updatedAt).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
