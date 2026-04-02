@@ -32,7 +32,7 @@ export function TeamSection() {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white">
             Meet the <span className="text-[#0ea5e9]">Team</span>
           </h2>
-          <p className="text-[#888888] mt-2">The minds behind DevOps Autopilot.</p>
+          <p className="text-[#888888] mt-2">The people behind DevOps Autopilot.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

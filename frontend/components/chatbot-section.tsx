@@ -2,39 +2,36 @@ import { MessageSquare, Terminal, Shield, Zap } from "lucide-react"
 
 export function ChatbotSection() {
   return (
-    <section className="px-4 py-16 md:py-24" id="chatbot">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+    <section className="w-full py-16 md:py-24" id="chatbot">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="w-full">
+            <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
               <MessageSquare size={14} className="text-[#0ea5e9]" />
               <span className="text-sm font-medium text-[#0ea5e9]">AI Assistant</span>
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Meet Your Autonomous AI CTO
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              AI Assistant
             </h2>
-            <p className="text-lg text-[#888888] mb-6 leading-relaxed">
-              Meet your new AI-powered troubleshooting companion. Our intelligent assistant helps you diagnose issues, 
-              explain complex errors in plain English, and provides actionable recommendations. Whether you're debugging 
-              a failing pipeline, investigating latency spikes, or just need to understand your system's health — 
-              simply ask and get instant, context-aware responses.
+            <p className="text-lg text-[#888888] mb-8 leading-relaxed">
+              Get instant answers to infrastructure questions. Our AI understands your setup, explains issues in plain language, and recommends next steps.
             </p>
-            <ul className="space-y-3 text-[#aaaaaa]">
-              <li className="flex items-center gap-3">
-                <Zap size={18} className="text-[#0ea5e9]" />
-                <span>Instant answers to complex infrastructure questions</span>
+            <ul className="space-y-4 text-[#aaaaaa]">
+              <li className="flex items-start gap-3">
+                <Zap size={20} className="text-[#0ea5e9] mt-0.5 flex-shrink-0" />
+                <span>Instant answers to infrastructure questions</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Terminal size={18} className="text-[#0ea5e9]" />
-                <span>Natural language interface — no CLI expertise required</span>
+              <li className="flex items-start gap-3">
+                <Terminal size={20} className="text-[#0ea5e9] mt-0.5 flex-shrink-0" />
+                <span>Simple questions, no CLI knowledge needed</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Shield size={18} className="text-[#0ea5e9]" />
-                <span>Context-aware suggestions based on your specific setup</span>
+              <li className="flex items-start gap-3">
+                <Shield size={20} className="text-[#0ea5e9] mt-0.5 flex-shrink-0" />
+                <span>Suggestions tailored to your setup</span>
               </li>
             </ul>
           </div>
-          <div className="flex justify-center">
+          <div className="flex justify-center lg:justify-end w-full">
             <div className="w-full max-w-md">
               <div className="rounded-2xl border-2 border-[#0ea5e9] bg-[#111111] overflow-hidden" style={{ boxShadow: '0 8px 32px rgba(14, 165, 233, 0.15)' }}>
                 <div className="bg-[#1a1a1a] px-4 py-3 rounded-t-xl flex items-center gap-3">
@@ -42,7 +39,7 @@ export function ChatbotSection() {
                     <MessageSquare size={14} className="text-white" />
                   </div>
                   <div>
-                    <div className="text-white font-medium text-sm">AI CTO Assistant</div>
+                    <div className="text-white font-medium text-sm">AI Assistant</div>
                     <div className="text-gray-500 text-xs flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-green-500"></span>
                       Online now

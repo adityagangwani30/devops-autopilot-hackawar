@@ -28,31 +28,31 @@ const features = [
     number: "01",
     icon: Zap,
     title: "Instant Diagnosis",
-    description: "When your CI/CD pipeline fails, the agent instantly identifies the root cause — no more digging through 200 lines of build logs at 3 AM.",
+    description: "When your pipeline fails, the agent identifies the root cause immediately — no more digging through logs at 3 AM.",
   },
   {
     number: "02",
     icon: CheckCircle,
-    title: "Fix + Approve Flow",
-    description: "The agent proposes a concrete fix, shows you the diff, and waits for your one-click approval before applying. You stay in control.",
+    title: "Fix with Approval",
+    description: "The agent proposes a fix, shows you the diff, and waits for your approval before applying. You stay in control.",
   },
   {
     number: "03",
     icon: ShieldAlert,
-    title: "Pushback",
-    description: "If a deploy is too risky — high blast radius, failing tests, or config drift — the agent pushes back and explains exactly why.",
+    title: "Risk Detection",
+    description: "If a deploy is too risky — high blast radius, failing tests, or config drift — the agent flags it and explains why.",
   },
   {
     number: "04",
     icon: DollarSign,
-    title: "Live Cost Counter",
-    description: "See the real-time dollar value of SLA penalties avoided and downtime prevented. Your ROI, quantified live on the dashboard.",
+    title: "Cost Tracking",
+    description: "See the real-time value of SLA penalties avoided and downtime prevented. Your ROI, quantified live.",
   },
   {
     number: "05",
     icon: MessageSquare,
-    title: "Natural Language Chat",
-    description: 'Talk to your infrastructure in plain English. Ask "Why did the auth service fail?" and get an actionable answer — not a wall of YAML.',
+    title: "Natural Language Queries",
+    description: "Ask questions like &quot;Why did the auth service fail?&quot; and get clear answers — not a wall of YAML.",
   },
 ]
 
@@ -66,11 +66,10 @@ export function DashboardShowcase() {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-500/20 bg-red-500/5 mb-4">
               <AlertTriangle size={14} className="text-red-500" />
-              <span className="text-red-500 text-sm font-medium">The Problem</span>
+              <span className="text-red-500 text-sm font-medium">The Challenge</span>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-              Your pipeline broke.{" "}
-              <span className="text-red-500">Now what?</span>
+              What Are the Problems?
             </h2>
           </div>
 
@@ -80,10 +79,10 @@ export function DashboardShowcase() {
                 <Eye size={24} className="text-white" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
-                Monitoring surfaces failures <span className="text-red-500">after</span> they hit production
+                Reactive alerts <span className="text-red-500">after</span> incidents occur
               </h3>
               <p className="text-[#888888] leading-relaxed">
-                Traditional monitoring tools alert you when things are already broken. By the time you see the Slack notification, your users have already seen the error page. You&apos;re always reactive, never proactive.
+                Traditional monitoring notifies you when production issues already affect users. By then, damage is done — you&apos;re always fixing problems instead of preventing them.
               </p>
             </div>
 
@@ -92,10 +91,10 @@ export function DashboardShowcase() {
                 <DollarSign size={24} className="text-white" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-3">
-                A <span className="text-orange-500">$400K+/year CTO</span> is out of reach for most startups
+                Senior DevOps expertise <span className="text-orange-500">costs $400K+</span> annually
               </h3>
               <p className="text-[#888888] leading-relaxed">
-                You need someone who understands blast radius, can read Terraform diffs, and knows when to say &quot;don&apos;t deploy on Friday at 5 PM.&quot; That expertise costs half a million — or one AI agent.
+                You need someone who understands blast radius, reads Terraform diffs, and knows when to say &quot;don&apos;t deploy on Friday.&quot; That level of expertise is expensive.
               </p>
             </div>
           </div>
@@ -106,14 +105,14 @@ export function DashboardShowcase() {
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10 mb-4">
               <Cog size={14} className="text-[#0ea5e9] animate-spin" style={{ animationDuration: "3s" }} />
-              <span className="text-[#0ea5e9] text-sm font-medium">The Solution</span>
+              <span className="text-[#0ea5e9] text-sm font-medium">How It Works</span>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
               The Core Loop:{" "}
               <span className="text-[#0ea5e9]">Observe → Reason → Act</span>
             </h2>
             <p className="text-lg text-[#888888] max-w-2xl mx-auto">
-              An intelligent agent that watches your pipeline 24/7, understands context like a senior engineer, and takes action — with your permission.
+              An intelligent agent that watches your pipeline 24/7, understands context like a senior engineer, and takes action — with your approval.
             </p>
           </div>
 
@@ -313,6 +312,146 @@ export function DashboardShowcase() {
               >
                 Launch Dashboard →
               </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* PRE-DEPLOY WAR ROOM */}
+        <div className="mb-24 scroll-mt-24">
+          <div className="bg-[#111111] border border-[#222222] rounded-2xl p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+                  <ShieldAlert size={14} className="text-[#0ea5e9]" />
+                  <span className="text-sm font-medium text-[#0ea5e9]">Pre-Deploy War Room</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  Pre-Deploy War Room
+                </h2>
+                <p className="text-lg text-[#888888] mb-6 leading-relaxed">
+                  Before any deployment, the system automatically opens a collaborative war room, aggregates signals from monitoring, tests, and logs, and gives the team a clear go/no-go recommendation.
+                </p>
+                <ul className="space-y-3 text-[#aaaaaa]">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle size={18} className="text-[#0ea5e9]" />
+                    <span>Aggregates signals from all monitoring tools</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle size={18} className="text-[#0ea5e9]" />
+                    <span>Real-time go/no-go decision engine</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle size={18} className="text-[#0ea5e9]" />
+                    <span>Collaborative review with your team</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="flex justify-center">
+                <div className="w-full max-w-md">
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                    <div className="bg-[#0f0f0f] px-4 py-3 border-b border-[#222222] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-semibold text-sm">War Room: auth-service</span>
+                        <span className="text-[#666666] text-xs">#4821</span>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">GO</span>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#222222]">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-white text-sm">All tests passing</span>
+                        <span className="text-green-400 text-xs ml-auto">✓</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#222222]">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-white text-sm">No open P0 incidents</span>
+                        <span className="text-green-400 text-xs ml-auto">✓</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#222222]">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-white text-sm">Latency normal</span>
+                        <span className="text-green-400 text-xs ml-auto">✓</span>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-[#222222]">
+                        <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                        <span className="text-white text-sm">Config drift detected</span>
+                        <span className="text-yellow-400 text-xs ml-auto">⚠</span>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3 border-t border-[#222222] flex items-center justify-between bg-[#0a0a0a]">
+                      <span className="text-[#666666] text-xs">3 signals reviewed</span>
+                      <span className="text-[#0ea5e9] text-xs font-medium">View Details →</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* GITHUB INTEGRATION */}
+        <div className="mb-16">
+          <div className="bg-[#111111] border border-[#222222] rounded-2xl p-8 md:p-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+              <div className="order-2 md:order-1 flex justify-center">
+                <div className="w-full max-w-md">
+                  <div className="bg-[#1a1a1a] border border-[#333333] rounded-xl overflow-hidden" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                    <div className="bg-[#0f0f0f] px-4 py-3 border-b border-[#222222]">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Github size={16} className="text-[#888888]" />
+                        <span className="text-[#666666] text-xs">Pull Request #482</span>
+                      </div>
+                      <div className="text-white font-medium text-sm">fix: resolve auth timeout in high load</div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-white text-xs">2 checks passed</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-white text-xs">1 conversation</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+                        <span className="text-white text-xs">+124 / -8 lines</span>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3 border-t border-[#222222] bg-[#0a0a0a]">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 rounded text-xs bg-red-500/20 text-red-400 border border-red-500/30">INCIDENT</span>
+                        <span className="text-[#666666] text-xs">Linked to #auth-timeout</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="order-1 md:order-2">
+                <div className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+                  <Github size={14} className="text-[#0ea5e9]" />
+                  <span className="text-sm font-medium text-[#0ea5e9]">GitHub Integration</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                  GitHub Integration
+                </h2>
+                <p className="text-lg text-[#888888] mb-6 leading-relaxed">
+                  Seamless two-way sync with GitHub — PRs, commits, and issues automatically linked to incidents and deployments, with no manual tagging needed.
+                </p>
+                <ul className="space-y-3 text-[#aaaaaa]">
+                  <li className="flex items-center gap-3">
+                    <GitPullRequest size={18} className="text-[#0ea5e9]" />
+                    <span>Automatic PR-incident linking</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <GitCommit size={18} className="text-[#0ea5e9]" />
+                    <span>Commit-level impact analysis</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <GitBranch size={18} className="text-[#0ea5e9]" />
+                    <span>Branch deployment tracking</span>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

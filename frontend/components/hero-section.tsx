@@ -20,16 +20,11 @@ export function HeroSection() {
         </div>
 
         <h1 className="mb-4 text-4xl font-bold leading-tight text-white md:text-6xl lg:text-7xl">
-          Meet Your Autonomous AI CTO
+          Your Autonomous DevOps Agent
         </h1>
         
         <p className="mb-8 text-lg text-[#888888] md:text-xl">
-          An AI CTO that observes your pipeline, reasons about failures, and acts.
-        </p>
-
-        <p className="mx-auto mb-10 max-w-3xl text-lg text-[#888888] md:text-xl">
-          An AI agent that observes your CI/CD pipeline, reasons about failures, and acts - diagnosed in seconds, fixed
-          with one click, never blindly risky.
+          An AI that monitors your pipeline, diagnoses issues, and takes action — with your approval.
         </p>
 
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -39,7 +34,7 @@ export function HeroSection() {
             id="cta-launch-autopilot"
           >
             <Rocket size={20} />
-            Launch Autopilot
+            Get Early Access
           </Link>
           <Link
             href="#solution"
@@ -47,7 +42,7 @@ export function HeroSection() {
             id="cta-watch-demo"
           >
             <Play size={18} />
-            Watch Demo
+            See How It Works
           </Link>
         </div>
       </div>

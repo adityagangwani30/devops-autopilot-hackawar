@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import { Brain } from "lucide-react"
 
 interface Node {
   id: string
@@ -230,8 +231,8 @@ export function KnowledgeGraph() {
   }, [hoveredNode])
 
   return (
-    <section className="px-4 py-16 md:py-24" id="knowledge-graph">
-      <div className="mx-auto max-w-6xl">
+    <section className="w-full py-16 md:py-24" id="knowledge-graph">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <style jsx>{`
           @keyframes fadeInGraph {
             0% { opacity: 0; transform: translateY(10px); }
@@ -241,32 +242,41 @@ export function KnowledgeGraph() {
             animation: fadeInGraph 0.8s ease-out forwards;
           }
         `}</style>
-        <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Infrastructure <span className="text-[#0ea5e9]">Knowledge Graph</span>
-          </h2>
-          <p className="text-lg text-[#888888]">
-            Real-time visualization of your connected services and dependencies
-          </p>
-        </div>
-        <div className="graph-container bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            className="w-full"
-            style={{ 
-              height: "450px", 
-              cursor: "pointer",
-              transition: "opacity 0.3s ease",
-              opacity: fadeIn ? 1 : 0
-            }}
-          />
-        </div>
-        <div className="flex flex-wrap justify-center gap-4 mt-6 text-xs text-[#666666]">
-          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#0ea5e9]" />API</span>
-          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#10b981]" />Auth/Users</span>
-          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]" />Orders/Payment</span>
-          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#f59e0b]" />Database/Cache</span>
-          <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#f43f5e]" />Queue</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="order-2 lg:order-1 w-full">
+            <div className="graph-container bg-[#111111] border border-[#222222] rounded-2xl overflow-hidden w-full h-auto flex items-center justify-center">
+              <canvas
+                ref={canvasRef}
+                className="w-full h-auto block"
+                style={{ 
+                  minHeight: "350px",
+                  maxWidth: "100%",
+                  cursor: "pointer",
+                  transition: "opacity 0.3s ease",
+                  opacity: fadeIn ? 1 : 0
+                }}
+              />
+            </div>
+          </div>
+          <div className="order-1 lg:order-2 w-full">
+            <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/10">
+              <Brain size={14} className="text-[#0ea5e9]" />
+              <span className="text-sm font-medium text-[#0ea5e9]">Visualization</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Infrastructure <span className="text-[#0ea5e9]">Knowledge Graph</span>
+            </h2>
+            <p className="text-lg text-[#888888] mb-8 leading-relaxed">
+              Real-time visualization of your connected services and dependencies. Understand how services interact, identify bottlenecks, and trace issues across your entire infrastructure.
+            </p>
+            <div className="flex flex-wrap gap-4 text-sm text-[#666666]">
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#0ea5e9]" />API Gateway</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#10b981]" />Auth/Users</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#8b5cf6]" />Orders/Payment</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#f59e0b]" />Database/Cache</span>
+              <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#f43f5e]" />Queue</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
