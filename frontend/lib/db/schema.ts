@@ -78,3 +78,61 @@ export const member = sqliteTable("member", {
   role: text("role").notNull().default("member"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 })
+
+export const repositoryAnalysis = sqliteTable("repository_analysis", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  repoFullName: text("repo_full_name").notNull(),
+  repoName: text("repo_name").notNull(),
+  ownerLogin: text("owner_login").notNull(),
+  htmlUrl: text("html_url"),
+  description: text("description"),
+  defaultBranch: text("default_branch"),
+  isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
+  primaryLanguage: text("primary_language"),
+  languagesJson: text("languages_json"),
+  dependenciesJson: text("dependencies_json"),
+  workflowsJson: text("workflows_json"),
+  issuesJson: text("issues_json"),
+  ciIssuesJson: text("ci_issues_json"),
+  suggestionsJson: text("suggestions_json"),
+  analysisMarkdown: text("analysis_markdown"),
+  summary: text("summary"),
+  historyJson: text("history_json"),
+  rawJson: text("raw_json"),
+  status: text("status").notNull().default("completed"),
+  lastError: text("last_error"),
+  analyzedAt: integer("analyzed_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+})
+
+export const knowledgeGraphNode = sqliteTable("knowledge_graph_node", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  repoFullName: text("repo_full_name").notNull(),
+  label: text("label").notNull(),
+  nodeType: text("node_type").notNull(),
+  propertiesJson: text("properties_json"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+})
+
+export const knowledgeGraphEdge = sqliteTable("knowledge_graph_edge", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  repoFullName: text("repo_full_name").notNull(),
+  sourceNodeId: text("source_node_id").notNull(),
+  targetNodeId: text("target_node_id").notNull(),
+  edgeType: text("edge_type").notNull(),
+  label: text("label"),
+  propertiesJson: text("properties_json"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+})

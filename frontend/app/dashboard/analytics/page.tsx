@@ -1,246 +1,335 @@
 "use client"
 
-import { useState } from "react"
+import { ProcessedKnowledgeGraph } from "@/components/dashboard/ProcessedKnowledgeGraph"
+import type {
+  DashboardInsights,
+  GraphNode,
+  KnowledgeGraphResponse,
+} from "@/lib/dashboard-types"
+import { useDashboardInsights, useKnowledgeGraph } from "@/lib/dashboard-queries"
 
-const weeklyData = [
-  { day: "Mon", builds: 24, deploys: 8, success: 92 },
-  { day: "Tue", builds: 32, deploys: 12, success: 88 },
-  { day: "Wed", builds: 28, deploys: 10, success: 95 },
-  { day: "Thu", builds: 36, deploys: 14, success: 91 },
-  { day: "Fri", builds: 40, deploys: 16, success: 94 },
-  { day: "Sat", builds: 16, deploys: 6, success: 100 },
-  { day: "Sun", builds: 12, deploys: 4, success: 97 },
-]
+interface MetricCard {
+  label: string
+  value: number
+  sub: string
+  color: string
+}
+
+const visibleGraphNodeTypes = new Set([
+  "repository",
+  "workflow",
+  "language",
+  "ci_issue",
+  "suggestion",
+])
+
+function formatStatus(status: string) {
+  return status.replace(/_/g, " ")
+}
+
+function getStatusTone(status: string) {
+  switch (status) {
+    case "completed":
+      return "fix"
+    case "failed":
+      return "alert"
+    default:
+      return ""
+  }
+}
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState("week")
+  const { data: insights, isLoading: insightsLoading, error: insightsError } = useDashboardInsights()
+  const { data: graph, isLoading: graphLoading, error: graphError } = useKnowledgeGraph()
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
+  
+  const loading = insightsLoading || graphLoading
+  const error = insightsError || graphError
+
+  const selectedNodeDetails = selectedNode
+    ? Object.entries(selectedNode.properties || {})
+    : []
+
+  const summaryCards: MetricCard[] = insights ? [
+    {
+      label: "Repositories In Scope",
+      value: insights.summary.totalRepositories,
+      sub: `${insights.summary.analyzedRepositories} analyzed, ${insights.summary.failedRepositories} failed`,
+      color: "teal",
+    },
+    {
+      label: "Weekly Push Frequency",
+      value: insights.summary.weeklyPushes,
+      sub: `${insights.summary.weeklyCommits} commits from GitHub pushes`,
+      color: "green",
+    },
+    {
+      label: "Knowledge Graph Coverage",
+      value: insights.summary.graphNodes,
+      sub: `${insights.summary.graphEdges} connected edges`,
+      color: "cyan",
+    },
+    {
+      label: "Actionable Findings",
+      value: insights.summary.totalCiFindings + insights.summary.totalSuggestions,
+      sub: `${insights.summary.totalOpenIssues} issues, ${insights.summary.totalSuggestions} suggestions`,
+      color: "purple",
+    },
+  ] : []
+  const loadingCards: MetricCard[] = Array.from({ length: 4 }, (_, index) => ({
+    label: `loading-${index}`,
+    value: 0,
+    sub: "",
+    color: "teal",
+  }))
+
+  const maxPushes = Math.max(...(insights?.weeklyPushFrequency.map((item) => item.pushes) || [1]), 1)
+  const maxGraphCount = Math.max(...(insights?.graphComposition.map((item) => item.count) || [1]), 1)
+  const maxRepositoryScore = Math.max(...(insights?.topRepositories.map((item) => item.score) || [1]), 1)
 
   return (
     <>
       <div className="dash-topbar">
         <div className="topbar-left">
           <h2>Analytics</h2>
-          <p>Monitor your deployment metrics and performance</p>
+          <p>Live repository analysis powered by GitHub activity and the processed local knowledge graph.</p>
         </div>
         <div className="topbar-right">
-          <div style={{ display: "flex", gap: "4px" }}>
-            {["24h", "7d", "30d", "90d"].map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`topbar-btn ${timeRange === range ? "primary" : ""}`}
-                style={{ padding: "6px 12px", fontSize: ".72rem" }}
-              >
-                {range}
-              </button>
-            ))}
-          </div>
-          <button className="topbar-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-            </svg>
-            Export
+          <button className="topbar-btn" onClick={() => {
+            // Trigger refetch
+            window.location.reload()
+          }}>
+            Refresh
           </button>
         </div>
       </div>
 
       <div className="dash-content">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "18px" }} className="dash-animate-in">
-          <div className="dash-card metric-card teal">
-            <div className="dash-card-body">
-              <p className="dash-card-title">Total Builds</p>
-              <p className="metric-value" style={{ color: "var(--accent)" }}>1,284</p>
-              <div className="metric-delta up">↑ 12% vs last week</div>
-            </div>
+        {error ? (
+          <div
+            className="dash-card"
+            style={{
+              padding: "16px 22px",
+              background: "rgba(248,113,113,.08)",
+              borderColor: "rgba(248,113,113,.2)",
+            }}
+          >
+            <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error}</p>
           </div>
-          <div className="dash-card metric-card green">
-            <div className="dash-card-body">
-              <p className="dash-card-title">Success Rate</p>
-              <p className="metric-value" style={{ color: "var(--green)" }}>94.2%</p>
-              <div className="metric-delta up">↑ 2.1% vs last week</div>
-            </div>
-          </div>
-          <div className="dash-card metric-card purple">
-            <div className="dash-card-body">
-              <p className="dash-card-title">Avg Build Time</p>
-              <p className="metric-value" style={{ color: "var(--purple)" }}>4m 32s</p>
-              <div className="metric-delta up">↓ 18s vs last week</div>
-            </div>
-          </div>
-          <div className="dash-card metric-card cyan">
-            <div className="dash-card-body">
-              <p className="dash-card-title">Deployments</p>
-              <p className="metric-value" style={{ color: "var(--cyan)" }}>70</p>
-              <div className="metric-delta up">↑ 8% vs last week</div>
-            </div>
-          </div>
-        </div>
+        ) : null}
 
-        <div className="dash-card dash-animate-in dash-delay-1">
-          <div className="dash-card-header">
-            <p className="dash-card-title">Build & Deploy Activity</p>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "var(--accent)" }} />
-                <span style={{ fontSize: ".68rem", color: "var(--text-muted)" }}>Builds</span>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "2px", background: "var(--cyan)" }} />
-                <span style={{ fontSize: ".68rem", color: "var(--text-muted)" }}>Deploys</span>
+        <div className="metrics-row">
+          {(loading ? loadingCards : summaryCards).map((metric, index) => (
+            <div
+              key={loading ? index : metric.label}
+              className={`dash-card metric-card ${loading ? "shimmer" : metric.color} dash-animate-in dash-delay-${index + 1}`}
+            >
+              <div className="dash-card-body">
+                {loading ? null : (
+                  <>
+                    <p className="dash-card-title">{metric.label}</p>
+                    <p className="metric-value" style={{ color: "var(--accent)" }}>{metric.value}</p>
+                    <div className="metric-sub">{metric.sub}</div>
+                  </>
+                )}
               </div>
             </div>
-          </div>
-          <div className="dash-card-body">
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "12px", height: "200px" }}>
-              {weeklyData.map((day, i) => (
-                <div key={day.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <div style={{
-                      height: `${(day.builds / 40) * 140}px`,
-                      background: "linear-gradient(180deg, var(--accent), var(--accent-dim))",
-                      borderRadius: "4px 4px 0 0",
-                      transition: "height .5s ease"
-                    }} />
-                    <div style={{
-                      height: `${(day.deploys / 16) * 80}px`,
-                      background: "linear-gradient(180deg, var(--cyan), rgba(34,211,238,.2))",
-                      borderRadius: "4px 4px 0 0",
-                      transition: "height .5s ease",
-                      marginTop: "4px"
-                    }} />
-                  </div>
-                  <span style={{ fontSize: ".62rem", color: "var(--text-muted)" }}>{day.day}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
-          <div className="dash-card dash-animate-in dash-delay-2">
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.7fr) minmax(300px, 1fr)", gap: "18px", alignItems: "start" }}>
+          <div className="dash-card dash-animate-in dash-delay-5" style={{ overflow: "hidden" }}>
             <div className="dash-card-header">
-              <p className="dash-card-title">Success Rate by Repository</p>
+              <p className="dash-card-title">Processed Repository Graph</p>
+              <span className="dash-card-badge">Live graph</span>
             </div>
-            <div className="dash-card-body">
-              <div className="freq-list">
-                {[
-                  { repo: "api-gateway", rate: 98 },
-                  { repo: "frontend-app", rate: 91 },
-                  { repo: "auth-service", rate: 95 },
-                  { repo: "data-processor", rate: 88 },
-                  { repo: "notification-svc", rate: 100 },
-                ].map((item) => (
-                  <div key={item.repo} className="freq-item">
-                    <span className="freq-label">{item.repo}</span>
-                    <div className="freq-bar-track">
-                      <div
-                        className="freq-bar-fill"
-                        style={{
-                          width: `${item.rate}%`,
-                          background: item.rate >= 95
-                            ? "linear-gradient(90deg, var(--green), #10B981)"
-                            : item.rate >= 85
-                              ? "linear-gradient(90deg, var(--accent), var(--cyan))"
-                              : "linear-gradient(90deg, var(--orange), var(--yellow))"
-                        }}
-                      />
+            <div className="dash-card-body" style={{ paddingTop: "8px" }}>
+              {loading ? (
+                <div className="dash-card shimmer" style={{ minHeight: "420px" }} />
+              ) : (
+                <ProcessedKnowledgeGraph
+                  nodes={graph?.nodes || []}
+                  edges={graph?.edges || []}
+                  selectedNodeId={selectedNode?.id || null}
+                  onSelectNode={setSelectedNode}
+                />
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: "18px" }}>
+            <div className="dash-card dash-animate-in dash-delay-6">
+              <div className="dash-card-header">
+                <p className="dash-card-title">Node Details</p>
+              </div>
+              <div className="dash-card-body">
+                {loading ? (
+                  <div className="dash-card shimmer" style={{ minHeight: "180px" }} />
+                ) : selectedNode ? (
+                  <div style={{ display: "grid", gap: "12px" }}>
+                    <div>
+                      <p style={{ fontSize: ".9rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                        {selectedNode.label}
+                      </p>
+                      <p style={{ fontSize: ".68rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                        {selectedNode.type.replace("_", " ")} in {selectedNode.repoFullName}
+                      </p>
                     </div>
-                    <span className="freq-value" style={{ color: item.rate >= 95 ? "var(--green)" : item.rate >= 85 ? "var(--accent)" : "var(--orange)" }}>
-                      {item.rate}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="dash-card dash-animate-in dash-delay-3">
-            <div className="dash-card-header">
-              <p className="dash-card-title">Build Time Distribution</p>
-            </div>
-            <div className="dash-card-body">
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[
-                  { range: "< 2 min", count: 324, color: "var(--green)" },
-                  { range: "2-5 min", count: 512, color: "var(--accent)" },
-                  { range: "5-10 min", count: 298, color: "var(--cyan)" },
-                  { range: "> 10 min", count: 150, color: "var(--orange)" },
-                ].map((item) => (
-                  <div key={item.range} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ width: "60px", fontSize: ".72rem", fontFamily: "var(--font-mono)", color: "var(--text-muted)" }}>
-                      {item.range}
-                    </span>
-                    <div style={{ flex: 1, height: "24px", background: "var(--bg-deep)", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{
-                        height: "100%",
-                        width: `${(item.count / 512) * 100}%`,
-                        background: item.color,
-                        borderRadius: "4px",
-                        display: "flex",
-                        alignItems: "center",
-                        paddingLeft: "8px",
-                        fontSize: ".62rem",
-                        fontFamily: "var(--font-mono)",
-                        color: "var(--bg-deepest)",
-                        fontWeight: 600
-                      }}>
-                        {item.count}
+                    {selectedNodeDetails.length === 0 ? (
+                      <p style={{ color: "var(--text-muted)", fontSize: ".72rem" }}>
+                        No stored properties are available for this node yet.
+                      </p>
+                    ) : (
+                      selectedNodeDetails.slice(0, 6).map(([key, value]) => (
+                        <div
+                          key={key}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: "10px",
+                            background: "var(--bg-surface)",
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <p style={{ fontSize: ".66rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                            {key}
+                          </p>
+                        >
+                        <p style={{ fontSize: ".74rem", color: "var(--text-primary)", marginTop: "4px" }}>
+                          {typeof value === "string" ? value : JSON.stringify(value)}
+                        </p>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p style={{ color: "var(--text-muted)", fontSize: ".74rem" }}>
+                    Build the knowledge graph and select a node to inspect repository-level details.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="dash-card dash-animate-in dash-delay-7">
+              <div className="dash-card-header">
+                <p className="dash-card-title">Graph Composition</p>
+              </div>
+              <div className="dash-card-body">
+                {loading ? (
+                  <div className="dash-card shimmer" style={{ minHeight: "180px" }} />
+                ) : (
+                  <div className="freq-list">
+                    {(insights?.graphComposition || []).map((item) => (
+                      <div key={item.type} className="freq-item">
+                        <span className="freq-label">{item.type.replace("_", " ")}</span>
+                        <div className="freq-bar-track">
+                          <div className="freq-bar-fill" style={{ width: `${(item.count / maxGraphCount) * 100}%` }} />
+                        </div>
+                        <span className="freq-value">{item.count}</span>
+                      </div>
+                    ))}
+                  </div
+                )}
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="dash-card dash-animate-in dash-delay-4">
-          <div className="dash-card-header">
-            <p className="dash-card-title">Recent Performance</p>
-            <span className="dash-card-badge">Live</span>
-          </div>
-          <div className="dash-card-body" style={{ padding: 0 }}>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Repository</th>
-                    <th>Build #</th>
-                    <th>Duration</th>
-                    <th>Status</th>
-                    <th>Change</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { time: "14:32", repo: "api-gateway", build: 1247, duration: "3m 42s", status: "success", change: "-12s" },
-                    { time: "14:28", repo: "frontend-app", build: 892, duration: "5m 18s", status: "success", change: "+3s" },
-                    { time: "14:15", repo: "auth-service", build: 456, duration: "2m 08s", status: "success", change: "-8s" },
-                    { time: "14:02", repo: "data-processor", build: 234, duration: "8m 42s", status: "failed", change: "+2m" },
-                    { time: "13:58", repo: "notification-svc", build: 189, duration: "1m 54s", status: "success", change: "-5s" },
-                  ].map((row, i) => (
-                    <tr key={i}>
-                      <td>{row.time}</td>
-                      <td style={{ fontFamily: "var(--font-mono)" }}>{row.repo}</td>
-                      <td style={{ fontFamily: "var(--font-mono)" }}>#{row.build}</td>
-                      <td style={{ fontFamily: "var(--font-mono)" }}>{row.duration}</td>
-                      <td>
-                        <span className={`tag ${row.status === "success" ? "fix" : "alert"}`}>
-                          {row.status}
-                        </span>
-                      </td>
-                      <td style={{
-                        fontFamily: "var(--font-mono)",
-                        color: row.change.startsWith("-") ? "var(--green)" : "var(--orange)"
-                      }}>
-                        {row.change}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px", alignItems: "start" }}>
+            <div className="dash-card dash-animate-in dash-delay-7">
+              <div className="dash-card-header">
+                <p className="dash-card-title">Weekly Push Frequency</p>
+              </div>
+              <div className="dash-card-body">
+                {loading ? (
+                  <div className="dash-card shimmer" style={{ minHeight: "220px" }} />
+                ) : (
+                  <div className="freq-list">
+                    {(insights?.weeklyPushFrequency || []).map((item) => (
+                      <div key={item.date} className="freq-item">
+                        <span className="freq-label">{item.label}</span>
+                        <div className="freq-bar-track">
+                          <div className="freq-bar-fill" style={{ width: `${(item.pushes / maxPushes) * 100}%` }} />
+                        </div>
+                        <span className="freq-value">{item.pushes} pushes / {item.commits} commits</span>
+                      </div>
+                    ))}
+                  </div
+                )}
+              </div>
             </div>
+
+            <div className="dash-card dash-animate-in dash-delay-7">
+              <div className="dash-card-header">
+                <p className="dash-card-title">Repository Focus</p>
+              </div>
+              <div className="dash-card-body">
+                {loading ? (
+                  <div className="dash-card shimmer" style={{ minHeight: "220px" }} />
+                ) : (
+                  <div className="freq-list">
+                    {(insights?.topRepositories || []).map((repository) => (
+                      <div key={repository.repoFullName} className="freq-item">
+                        <span className="freq-label">{repository.repoFullName}</span>
+                        <div className="freq-bar-track">
+                          <div className="freq-bar-fill" style={{ width: `${(repository.score / maxRepositoryScore) * 100}%` }} />
+                        </div>
+                        <span className="freq-value">
+                          {repository.openIssues} issues / {repository.ciFindings + repository.suggestions} findings
+                        </span>
+                      </div>
+                    ))}
+                  </div
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="dash-card dash-animate-in dash-delay-7">
+            <div className="dash-card-header">
+              <p className="dash-card-title">Repository Analysis Table</p>
+              <span className="dash-card-badge">Current cache</span>
+            </div>
+            <div className="dash-card-body" style={{ padding: 0 }}>
+              {loading ? (
+                <div className="dash-card shimmer" style={{ minHeight: "280px" }} />
+              ) : !insights || insights.topRepositories.length === 0 ? (
+                <div style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
+                  No analyzed repositories are available yet.
+                </div
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Repository</th>
+                        <th>Status</th>
+                        <th>Language</th>
+                        <th>Issues</th>
+                        <th>Workflows</th>
+                        <th>CI Findings</th>
+                        <th>Suggestions</th>
+                        <th>Updated</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {insights.topRepositories.map((repository) => (
+                        <tr key={repository.repoFullName}>
+                          <td>{repository.repoFullName}</td>
+                          <td>
+                            <span className={`tag ${getStatusTone(repository.status)}`}>
+                              {formatStatus(repository.status)}
+                            </span>
+                          </td>
+                        </td>
+                        <td>{repository.primaryLanguage || "Unknown"}</td>
+                        <td>{repository.workflows}</td>
+                        <td>{repository.ciFindings}</td>
+                        <td>{repository.suggestions}</td>
+                        <td>{new Date(repository.updatedAt).toLocaleDateString()}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
