@@ -1,36 +1,36 @@
-"use client"
-
-import { useSession } from "@/lib/use-session"
+import { GitHubAuthGate } from "@/components/auth/GitHubAuthGate"
+import { SessionProvider } from "@/components/auth/SessionProvider"
+import { QueryProvider } from "@/components/QueryProvider"
 import Sidebar from "@/components/dashboard/Sidebar"
+import { getSession } from "@/lib/auth-session"
 import "../dashboard/dashboard.css"
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { session, loading } = useSession()
+  const session = await getSession()
 
-  if (loading) {
+  if (!session) {
     return (
-      <div className="dashboard-root">
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#2DD4BF] border-t-transparent" />
-        </div>
-      </div>
+      <GitHubAuthGate
+        title="Authenticate before entering the dashboard"
+        description="Use Better Auth with GitHub to unlock the dashboard, repositories, and knowledge graph."
+      />
     )
   }
 
-  if (!session) {
-    return null
-  }
-
   return (
-    <div className="dashboard-root">
-      <Sidebar />
-      <main className="dash-main">
-        {children}
-      </main>
-    </div>
+    <QueryProvider>
+      <SessionProvider session={session}>
+        <div className="dashboard-root">
+          <Sidebar />
+          <main className="dash-main">
+            {children}
+          </main>
+        </div>
+      </SessionProvider>
+    </QueryProvider>
   )
 }

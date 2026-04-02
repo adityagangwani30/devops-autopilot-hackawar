@@ -1,167 +1,84 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useSession } from "@/lib/use-session"
+import { ProcessedKnowledgeGraph } from "@/components/dashboard/ProcessedKnowledgeGraph"
+import type { DashboardInsights, KnowledgeGraphResponse } from "@/lib/dashboard-types"
+import { useDashboardInsights, useKnowledgeGraph } from "@/lib/dashboard-queries"
 
-interface GitHubOrg {
-  id: string
-  login: string
-  avatar_url: string
-  url: string
+interface MetricCard {
+  label: string
+  value: number
+  sub: string
+  color: string
 }
 
-interface ConnectedOrg {
-  id: string
-  name: string
-  slug: string
-  githubOrgId: string
-  githubOrgAvatar?: string
-  connectedAt: string
-  role: string
-}
-
-const mockMetrics = [
-  { label: "Active Repos", value: "24", delta: "+3", trend: "up", color: "teal" },
-  { label: "Pipeline Runs", value: "1,284", delta: "+12%", trend: "up", color: "green" },
-  { label: "Success Rate", value: "94.2%", delta: "+2.1%", trend: "up", color: "cyan" },
-  { label: "Avg Build Time", value: "4m 32s", delta: "-18s", trend: "up", color: "purple" },
-]
-
-const mockActivity = [
-  { repo: "api-gateway", action: "Deploy succeeded", time: "2 min ago", status: "success" },
-  { repo: "frontend-app", action: "Build failed", time: "15 min ago", status: "error" },
-  { repo: "auth-service", action: "Pipeline triggered", time: "32 min ago", status: "pending" },
-  { repo: "data-processor", action: "Deploy succeeded", time: "1 hr ago", status: "success" },
-  { repo: "notification-svc", action: "Test passed", time: "2 hr ago", status: "success" },
+const quickActions = [
+  { label: "Repositories", desc: "Analyze repositories and inspect findings", href: "/dashboard/repositories" },
+  { label: "Knowledge Graph", desc: "Build and inspect the local graph", href: "/dashboard/knowledge-graph" },
+  { label: "Analytics", desc: "Review graph and repository metrics", href: "/dashboard/analytics" },
+  { label: "AI Assistant", desc: "Ask questions grounded in the graph", href: "/dashboard/chatbot" },
 ]
 
 export default function OverviewPage() {
   const { session } = useSession()
-  const [githubOrgs, setGithubOrgs] = useState<GitHubOrg[]>([])
-  const [connectedOrgs, setConnectedOrgs] = useState<ConnectedOrg[]>([])
-  const [loadingOrgs, setLoadingOrgs] = useState(false)
-  const [connectingOrg, setConnectingOrg] = useState<string | null>(null)
-  const [showOrgPicker, setShowOrgPicker] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const { data: insights, isLoading: insightsLoading, error: insightsError } = useDashboardInsights()
+  const { data: graph, isLoading: graphLoading, error: graphError } = useKnowledgeGraph()
+  
+  const loading = insightsLoading || graphLoading
+  const error = insightsError || graphError
 
-  useEffect(() => {
-    fetchConnectedOrgs()
-  }, [])
+  const metrics: MetricCard[] = insights ? [
+    { label: "Repositories", value: insights.summary.totalRepositories, sub: `${insights.summary.analyzedRepositories} analyzed`, color: "teal" },
+    { label: "Weekly Pushes", value: insights.summary.weeklyPushes, sub: `${insights.summary.weeklyCommits} commits`, color: "green" },
+    { label: "Graph Nodes", value: insights.summary.graphNodes, sub: `${insights.summary.graphEdges} edges`, color: "cyan" },
+    { label: "Open Issues", value: insights.summary.totalOpenIssues, sub: `${insights.summary.totalCiFindings} CI findings`, color: "purple" },
+  ] : []
+  const loadingMetrics: MetricCard[] = Array.from({ length: 4 }, (_, index) => ({
+    label: `loading-${index}`,
+    value: 0,
+    sub: "",
+    color: "teal",
+  }))
 
-  const fetchConnectedOrgs = async () => {
-    try {
-      const res = await fetch("/api/orgs")
-      if (res.ok) {
-        const data = await res.json()
-        setConnectedOrgs(data.organizations || [])
-      }
-    } catch (err) {
-      console.error("Failed to fetch connected orgs:", err)
-    }
-  }
-
-  const fetchGitHubOrgs = async () => {
-    setLoadingOrgs(true)
-    setError(null)
-    try {
-      const res = await fetch("/api/github/orgs")
-      if (!res.ok) {
-        throw new Error("Failed to fetch GitHub organizations")
-      }
-      const data = await res.json()
-      setGithubOrgs(data.organizations || [])
-      setShowOrgPicker(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
-    } finally {
-      setLoadingOrgs(false)
-    }
-  }
-
-  const connectOrg = async (org: GitHubOrg) => {
-    setConnectingOrg(org.id)
-    setError(null)
-    try {
-      const res = await fetch("/api/orgs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          githubOrgId: org.id,
-          githubOrgName: org.login,
-          githubOrgAvatar: org.avatar_url,
-        }),
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Failed to connect organization")
-      }
-
-      setSuccess(`Successfully connected ${org.login}`)
-      setShowOrgPicker(false)
-      fetchConnectedOrgs()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
-    } finally {
-      setConnectingOrg(null)
-    }
-  }
-
-  const disconnectOrg = async (orgId: string) => {
-    try {
-      const res = await fetch(`/api/orgs/${orgId}`, { method: "DELETE" })
-      if (res.ok) {
-        setSuccess("Organization disconnected")
-        fetchConnectedOrgs()
-      }
-    } catch (err) {
-      setError("Failed to disconnect organization")
-    }
-  }
+  const maxPushes = Math.max(...(insights?.weeklyPushFrequency.map((item) => item.pushes) || [1]), 1)
+  const maxGraphCount = Math.max(...(insights?.graphComposition.map((item) => item.count) || [1]), 1)
 
   return (
     <>
       <div className="dash-topbar">
         <div className="topbar-left">
           <h2>Overview</h2>
-          <p>Welcome back, {session?.user?.name || "User"} — here's what's happening today</p>
+          <p>Welcome back, {session?.user?.name || "User"} - here is the live state of your repositories, GitHub pushes, and processed knowledge graph.</p>
         </div>
         <div className="topbar-right">
-          <button className="topbar-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 20V10M12 20V4M6 20v-6" />
-            </svg>
-            Export Report
-          </button>
-          <button className="topbar-btn primary" onClick={fetchGitHubOrgs} disabled={loadingOrgs}>
-            + {loadingOrgs ? "Loading..." : "Connect Repo"}
+          <button className="topbar-btn" onClick={() => {
+            // Trigger refetch
+            window.location.reload()
+          }}>
+            Refresh
           </button>
         </div>
       </div>
 
       <div className="dash-content">
-        {error && (
-          <div className="dash-card" style={{ padding: "16px 22px", background: "rgba(248,113,113,.1)", borderColor: "rgba(248,113,113,.2)" }}>
+        {error ? (
+          <div className="dash-card" style={{ padding: "16px 22px", background: "rgba(248,113,113,.08)", borderColor: "rgba(248,113,113,.2)" }}>
             <p style={{ color: "var(--red)", fontSize: ".82rem" }}>{error}</p>
           </div>
-        )}
-
-        {success && (
-          <div className="dash-card" style={{ padding: "16px 22px", background: "rgba(52,211,153,.1)", borderColor: "rgba(52,211,153,.2)" }}>
-            <p style={{ color: "var(--green)", fontSize: ".82rem" }}>{success}</p>
-          </div>
-        )}
+        ) : null}
 
         <div className="metrics-row">
-          {mockMetrics.map((metric, i) => (
-            <div key={metric.label} className={`dash-card metric-card ${metric.color} dash-animate-in dash-delay-${i + 1}`}>
+          {(loading ? loadingMetrics : metrics).map((metric, index) => (
+            <div key={loading ? index : metric.label} className={`dash-card metric-card ${loading ? "shimmer" : metric.color} dash-animate-in dash-delay-${index + 1}`}>
               <div className="dash-card-body">
-                <p className="dash-card-title">{metric.label}</p>
-                <p className="metric-value" style={{ color: "var(--accent)" }}>{metric.value}</p>
-                <div className={`metric-delta ${metric.trend}`}>
-                  {metric.trend === "up" ? "↑" : "↓"} {metric.delta}
-                </div>
+                {loading ? null : (
+                  <>
+                    <p className="dash-card-title">{metric.label}</p>
+                    <p className="metric-value" style={{ color: "var(--accent)" }}>{metric.value}</p>
+                    <div className="metric-sub">{metric.sub}</div>
+                  </>
+                )}
               </div>
             </div>
           ))}
@@ -170,97 +87,94 @@ export default function OverviewPage() {
         <div className="middle-row">
           <div className="dash-card dash-animate-in dash-delay-5">
             <div className="dash-card-header">
-              <p className="dash-card-title">Recent Activity</p>
-              <span className="dash-card-badge">Live</span>
+              <p className="dash-card-title">Recent Push Activity</p>
+              <span className="dash-card-badge">GitHub</span>
             </div>
-            <div className="dash-card-body">
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Repository</th>
-                      <th>Action</th>
-                      <th>Status</th>
-                      <th>Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockActivity.map((item, i) => (
-                      <tr key={i}>
-                        <td>{item.repo}</td>
-                        <td>{item.action}</td>
-                        <td>
-                          <span className={`tag ${item.status === "success" ? "fix" : item.status === "error" ? "alert" : "observe"}`}>
-                            {item.status}
-                          </span>
-                        </td>
-                        <td>{item.time}</td>
+            <div className="dash-card-body" style={{ padding: 0 }}>
+              {loading ? (
+                <div className="dash-card shimmer" style={{ minHeight: "24px" }} />
+              ) : !insights || insights.recentPushes.length === 0 ? (
+                <div style={{ padding: "28px", color: "var(--text-muted)", textAlign: "center" }}>
+                  No recent push events were found for the connected repositories.
+                </div>
+              ) : (
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Repository</th>
+                        <th>Branch</th>
+                        <th>Commits</th>
+                        <th>Pushed</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {insights.recentPushes.map((push) => (
+                        <tr key={push.id}>
+                          <td>{push.repoFullName}</td>
+                          <td>{push.branch}</td>
+                          <td>{push.commits}</td>
+                          <td>{new Date(push.pushedAt).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="dash-card dash-animate-in dash-delay-6">
             <div className="dash-card-header">
-              <p className="dash-card-title">Connected Organizations</p>
+              <p className="dash-card-title">Processed Graph Snapshot</p>
+              <span className="dash-card-badge">Current data</span>
             </div>
             <div className="dash-card-body">
-              {connectedOrgs.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)" }}>
-                  <p>No organizations connected</p>
-                  <button
-                    onClick={fetchGitHubOrgs}
-                    className="topbar-btn primary"
-                    style={{ marginTop: "16px" }}
-                  >
-                    Connect GitHub Org
-                  </button>
-                </div>
+              {loading ? (
+                <div className="dash-card shimmer" style={{ minHeight: "220px" }} />
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {connectedOrgs.map((org) => (
-                    <div
-                      key={org.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px 14px",
-                        background: "var(--bg-surface)",
-                        borderRadius: "8px",
-                        border: "1px solid var(--border)"
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                        {org.githubOrgAvatar && (
-                          <img src={org.githubOrgAvatar} alt={org.name} style={{ width: "32px", height: "32px", borderRadius: "8px" }} />
-                        )}
-                        <div>
-                          <p style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--text-primary)" }}>{org.name}</p>
-                          <p style={{ fontSize: ".68rem", color: "var(--text-muted)" }}>
-                            Connected {new Date(org.connectedAt).toLocaleDateString()}
-                          </p>
+                <div style={{ display: "grid", gap: "18px" }}>
+                  <ProcessedKnowledgeGraph
+                    nodes={graph?.nodes || []}
+                    edges={graph?.edges || []}
+                    compact
+                  />
+
+                  <div>
+                    <p style={{ fontSize: ".68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>
+                      Knowledge Graph Composition
+                    </p>
+                    <div style={{ marginTop: "12px", display: "grid", gap: "10px" }}>
+                      {(insights?.graphComposition || []).slice(0, 5).map((item) => (
+                        <div key={item.type} className="freq-item">
+                          <span className="freq-label">{item.type.replace("_", " ")}</span>
+                          <div className="freq-bar-track">
+                            <div className="freq-bar-fill" style={{ width: `${(item.count / maxGraphCount) * 100}%` }} />
+                          </div>
+                          <span className="freq-value">{item.count}</span>
                         </div>
-                      </div>
-                      <button
-                        onClick={() => disconnectOrg(org.id)}
-                        style={{
-                          padding: "6px 12px",
-                          fontSize: ".72rem",
-                          background: "transparent",
-                          border: "1px solid rgba(248,113,113,.2)",
-                          borderRadius: "6px",
-                          color: "var(--red)",
-                          cursor: "pointer"
-                        }}
-                      >
-                        Disconnect
-                      </button>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  <div>
+                    <p style={{ fontSize: ".68rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".08em" }}>
+                      Languages in Scope
+                    </p>
+                    <div style={{ marginTop: "12px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {(insights?.languageDistribution || []).length > 0 ? (
+                        insights?.languageDistribution.map((item) => (
+                          <span key={item.language} className="dash-card-badge">
+                            {item.language} ({item.count})
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: "var(--text-muted)", fontSize: ".74rem" }}>
+                          No primary language data available yet.
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -270,27 +184,25 @@ export default function OverviewPage() {
         <div className="bottom-row">
           <div className="dash-card dash-animate-in dash-delay-7">
             <div className="dash-card-header">
-              <p className="dash-card-title">Deployment Frequency</p>
-              <span className="dash-card-badge">This Week</span>
+              <p className="dash-card-title">Weekly Push Frequency</p>
+              <span className="dash-card-badge">From GitHub push events</span>
             </div>
             <div className="dash-card-body">
-              <div className="freq-list">
-                {[
-                  { label: "Monday", value: 12, max: 20 },
-                  { label: "Tuesday", value: 18, max: 20 },
-                  { label: "Wednesday", value: 8, max: 20 },
-                  { label: "Thursday", value: 15, max: 20 },
-                  { label: "Friday", value: 20, max: 20 },
-                ].map((day) => (
-                  <div key={day.label} className="freq-item">
-                    <span className="freq-label">{day.label}</span>
-                    <div className="freq-bar-track">
-                      <div className="freq-bar-fill" style={{ width: `${(day.value / day.max) * 100}%` }} />
+              {loading ? (
+                <div className="dash-card shimmer" style={{ minHeight: "180px" }} />
+              ) : (
+                <div className="freq-list">
+                  {(insights?.weeklyPushFrequency || []).map((day) => (
+                    <div key={day.date} className="freq-item">
+                      <span className="freq-label">{day.label}</span>
+                      <div className="freq-bar-track">
+                        <div className="freq-bar-fill" style={{ width: `${(day.pushes / maxPushes) * 100}%` }} />
+                      </div>
+                      <span className="freq-value">{day.pushes} pushes / {day.commits} commits</span>
                     </div>
-                    <span className="freq-value">{day.value}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -300,94 +212,86 @@ export default function OverviewPage() {
             </div>
             <div className="dash-card-body">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                {[
-                  { label: "New Repository", icon: "+", desc: "Add a new repo to monitor" },
-                  { label: "Create Pipeline", icon: "▶", desc: "Set up a new CI/CD pipeline" },
-                  { label: "View Analytics", icon: "◉", desc: "Check deployment analytics" },
-                  { label: "Get Support", icon: "?", desc: "Chat with AI assistant" },
-                ].map((action) => (
-                  <button
+                {quickActions.map((action) => (
+                  <Link
                     key={action.label}
+                    href={action.href}
                     style={{
+                      display: "block",
                       padding: "16px",
                       background: "var(--bg-surface)",
                       border: "1px solid var(--border)",
                       borderRadius: "10px",
                       textAlign: "left",
-                      cursor: "pointer",
-                      transition: "all .25s"
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.borderColor = "var(--border-glow)"
-                      e.currentTarget.style.background = "var(--accent-dim)"
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.borderColor = "var(--border)"
-                      e.currentTarget.style.background = "var(--bg-surface)"
+                      textDecoration: "none",
                     }}
                   >
-                    <div style={{ fontSize: "1.2rem", color: "var(--accent)", marginBottom: "8px" }}>{action.icon}</div>
                     <p style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-primary)" }}>{action.label}</p>
                     <p style={{ fontSize: ".65rem", color: "var(--text-muted)", marginTop: "4px" }}>{action.desc}</p>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {showOrgPicker && (
-        <div className="fixed inset-0" style={{ background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
-          <div className="dash-card" style={{ width: "100%", maxWidth: "480px", maxHeight: "80vh", overflow: "hidden" }}>
-            <div style={{ padding: "18px 22px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h3 style={{ fontSize: ".92rem", fontWeight: 700, color: "var(--text-primary)" }}>Select GitHub Organization</h3>
-              <button
-                onClick={() => setShowOrgPicker(false)}
-                style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.2rem" }}
-              >
-                ×
-              </button>
+          
+          <div className="dash-card dash-animate-in dash-delay-8">
+            <div className="dash-card-header">
+              <p className="dash-card-title">Security Vulnerabilities</p>
+              <span className="dash-card-badge">From analyzed dependencies</span>
             </div>
-            <div style={{ padding: "18px 22px", overflowY: "auto", maxHeight: "60vh" }}>
-              {githubOrgs.length === 0 ? (
-                <p style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)" }}>No organizations found</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {githubOrgs.map((org) => (
-                    <button
-                      key={org.id}
-                      onClick={() => connectOrg(org)}
-                      disabled={connectingOrg === org.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        padding: "12px 14px",
-                        background: "var(--bg-surface)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        opacity: connectingOrg === org.id ? 0.5 : 1
-                      }}
-                    >
-                      <img src={org.avatar_url} alt={org.login} style={{ width: "36px", height: "36px", borderRadius: "8px" }} />
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--text-primary)" }}>{org.login}</p>
-                        <p style={{ fontSize: ".68rem", color: "var(--text-muted)" }}>{org.url}</p>
+            <div className="dash-card-body">
+              {loading ? (
+                <div className="dash-card shimmer" style={{ minHeight: "200px" }} />
+              ) : insights?.error ? (
+                <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>
+                  {insights.error}
+                </div>
+              ) : insights?.cves && insights.cves.length > 0 ? (
+                <div className="cve-list">
+                  {insights.cves.map((cve) => (
+                    <div key={cve.id} className={`cve-item severity-${cve.severity.toLowerCase()}`}>
+                      <div className="cve-header">
+                        <span className={`cve-id ${getCveSeverityClass(cve.severity)}`}>
+                          {cve.id}
+                        </span>
+                        <span className="cve-package">{cve.package}</span>
+                        <span className="cve-version">{cve.version}</span>
                       </div>
-                      {connectingOrg === org.id && (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#2DD4BF] border-t-transparent" />
-                      )}
-                    </button>
+                      <div className="cve-description">
+                        {cve.description}
+                      </div>
+                      <div className="cve-actions">
+                        <a href={cve.link} target="_blank" rel="noopener noreferrer" className="cve-link">
+                          View CVE Details →
+                        </a>
+                      </div>
+                    </div>
                   ))}
+                </div>
+              ) : (
+                <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>
+                  No known vulnerabilities found in analyzed dependencies.
                 </div>
               )}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </>
   )
+}
+
+function getCveSeverityClass(severity: string): string {
+  switch (severity.toLowerCase()) {
+    case 'critical':
+      return 'cve-critical'
+    case 'high':
+      return 'cve-high'
+    case 'medium':
+      return 'cve-medium'
+    case 'low':
+      return 'cve-low'
+    default:
+      return 'cve-info'
+  }
 }

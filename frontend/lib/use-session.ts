@@ -1,59 +1,40 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { authClient } from "@/lib/auth-client"
+import { useSessionContext } from "@/components/auth/SessionProvider"
 
-interface User {
-  id: string
-  name: string
-  email: string
-  image?: string
-  role?: string
-}
-
-interface Session {
-  user: User
-  session: {
-    id: string
-    expiresAt: string
-    token: string
-  }
-}
+type Session = typeof authClient.$Infer.Session
 
 export function useSession() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const session = useSessionContext()
 
-  useEffect(() => {
-    fetch("/api/auth/get-session")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.user) {
-          setSession(data)
-        }
+  const signIn = async (provider: "github", callbackURL = "/dashboard") => {
+    try {
+      await authClient.signIn.social({
+        provider,
+        callbackURL,
       })
-      .catch(console.error)
-      .finally(() => setLoading(false))
-  }, [])
-
-  const signIn = async (provider: string) => {
-    const res = await fetch(`/api/auth/sign-in/${provider}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ callbackURL: "/dashboard" }),
-    })
-    const data = await res.json()
-    if (data?.url) {
-      window.location.href = data.url
+    } catch (signInError) {
+      console.error("Sign-in failed:", signInError)
     }
   }
 
   const signOut = async () => {
-    await fetch("/api/auth/sign-out", { method: "POST" })
-    setSession(null)
+    try {
+      await authClient.signOut()
+    } catch (signOutError) {
+      console.error("Sign-out failed:", signOutError)
+    }
     router.push("/login")
   }
 
-  return { session, loading, signIn, signOut }
+  return {
+    session: (session ?? null) as Session | null,
+    loading: false,
+    error: null,
+    signIn,
+    signOut,
+  }
 }

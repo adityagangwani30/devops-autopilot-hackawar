@@ -1,264 +1,512 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import ReactMarkdown from "react-markdown"
 
-interface Message {
+interface ChatToolResult {
+  question: string
+  summary: string
+  stats: {
+    analyzedRepositories: number
+    failedRepositories: number
+    graphNodes: number
+    graphEdges: number
+  }
+  repositories: Array<{
+    repoFullName: string
+    repoName: string
+    status: string
+    summary: string
+    analyzedAt: string
+    lastError: string
+    score: number
+  }>
+  matchingNodes: Array<{
+    label: string
+    type: string
+    repoFullName: string
+    score: number
+  }>
+  ciIssues: Array<{
+    repoFullName: string
+    summary: string
+    score: number
+  }>
+  suggestions: Array<{
+    repoFullName: string
+    summary: string
+    score: number
+  }>
+  topLanguages: Array<{
+    language: string
+    bytes: number
+  }>
+  recommendedActions: string[]
+}
+
+interface ChatMessage {
   id: string
   role: "user" | "assistant"
   content: string
-  timestamp: Date
+  timestamp: string
+  toolResult?: ChatToolResult | null
+  fallback?: boolean
 }
 
-const quickActions = [
-  "Show me recent deployments",
-  "What issues need attention?",
-  "Create a new pipeline",
-  "Check system health",
-  "Explain this error",
-  "Generate deployment report",
+const initialMessages: ChatMessage[] = [
+  {
+    id: "welcome",
+    role: "assistant",
+    content:
+      "Ask about your repositories, workflows, CI issues, or saved knowledge graph. I will ground the answer in your local AI CTO analysis whenever that data exists.",
+    timestamp: new Date().toISOString(),
+  },
 ]
 
+const quickActions = [
+  "Summarize my knowledge graph",
+  "Which repositories need attention first?",
+  "What CI issues are currently saved?",
+  "What are the top recommendations across my repos?",
+  "Which workflows look weak or missing?",
+  "What should I do next to improve delivery health?",
+]
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
 export default function ChatbotPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content: "Hello! I'm your DevOps Autopilot AI assistant. I can help you with deployments, pipeline management, troubleshooting, and more. How can I assist you today?",
-      timestamp: new Date()
-    }
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [input, setInput] = useState("")
-  const [isTyping, setIsTyping] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [latestToolResult, setLatestToolResult] = useState<ChatToolResult | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
-  const handleSend = async () => {
-    if (!input.trim()) return
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, isSending])
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date()
+  const sessionStats = useMemo(() => {
+    const assistantMessages = messages.filter((message) => message.role === "assistant").length
+    return {
+      totalMessages: messages.length,
+      assistantMessages,
     }
+  }, [messages])
 
-    setMessages(prev => [...prev, userMessage])
+  const resetChat = () => {
+    setMessages(initialMessages)
     setInput("")
-    setIsTyping(true)
-
-    setTimeout(() => {
-      setIsTyping(false)
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "I've analyzed your request. Based on the current system state, here's what I found: Your deployment pipeline is running smoothly with a 94.2% success rate. There are 3 open issues across your repositories that may need attention.",
-        timestamp: new Date()
-      }])
-    }, 1500)
+    setError(null)
+    setLatestToolResult(null)
   }
 
-  const handleQuickAction = (action: string) => {
-    setInput(action)
+  const sendMessage = async (presetMessage?: string) => {
+    const content = (presetMessage ?? input).trim()
+    if (!content || isSending) {
+      return
+    }
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content,
+      timestamp: new Date().toISOString(),
+    }
+
+    const conversation = [...messages, userMessage].map((message) => ({
+      role: message.role,
+      content: message.content,
+    }))
+
+    setMessages((current) => [...current, userMessage])
+    setInput("")
+    setIsSending(true)
+    setError(null)
+
+    try {
+      const response = await fetch("/api/chatbot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: conversation,
+        }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to get a chatbot response")
+      }
+
+      const toolResult = (data.tool_result || null) as ChatToolResult | null
+      setLatestToolResult(toolResult)
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          content: typeof data.message === "string"
+            ? data.message
+            : "I could not generate a response.",
+          timestamp: new Date().toISOString(),
+          toolResult,
+          fallback: Boolean(data.fallback),
+        },
+      ])
+    } catch (sendError) {
+      const message = sendError instanceof Error
+        ? sendError.message
+        : "Failed to reach the chatbot service"
+
+      setError(message)
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-error-${Date.now()}`,
+          role: "assistant",
+          content: "I could not complete that request right now. Please check the AI CTO service or try again in a moment.",
+          timestamp: new Date().toISOString(),
+          fallback: true,
+        },
+      ])
+    } finally {
+      setIsSending(false)
+    }
   }
 
   return (
-    <>
-      <div className="dash-topbar">
-        <div className="topbar-left">
-          <h2>AI Chatbot</h2>
-          <p>Get instant help from your AI DevOps assistant</p>
-        </div>
-        <div className="topbar-right">
-          <button className="topbar-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Chat History
-          </button>
-          <button className="topbar-btn primary">
-            + New Chat
-          </button>
-        </div>
-      </div>
-
-      <div className="dash-content" style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "24px", paddingBottom: "120px" }}>
-        <div className="dash-card dash-animate-in" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
-          <div className="dash-card-header" style={{ borderBottom: "1px solid var(--border)", padding: "16px 22px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div className="ai-avatar" style={{ width: "32px", height: "32px", borderRadius: "10px", background: "linear-gradient(135deg, var(--accent), var(--cyan))", display: "grid", placeItems: "center", fontSize: "14px", boxShadow: "0 0 16px var(--accent-glow)" }}>
-                🤖
-              </div>
-              <div>
-                <p style={{ fontSize: ".82rem", fontWeight: 600, color: "var(--text-primary)" }}>DevOps Autopilot AI</p>
-                <p style={{ fontSize: ".62rem", color: "var(--green)", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
-                  Online
-                </p>
-              </div>
+    <div style={{ height: '100vh' }}>
+      <div
+        className="dash-card dash-animate-in"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          className="dash-card-header"
+          style={{
+            borderBottom: "1px solid var(--border)",
+            paddingBottom: "16px",
+            alignItems: "center",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              className="ai-avatar"
+              style={{
+                width: "34px",
+                height: "34px",
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, var(--accent), var(--cyan))",
+                display: "grid",
+                placeItems: "center",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--bg-deepest)",
+              }}
+            >
+              AI
+            </div>
+            <div>
+              <p style={{ fontSize: ".82rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                DevOps Autopilot AI
+              </p>
+              <p style={{ fontSize: ".64rem", color: "var(--text-muted)" }}>
+                Knowledge graph grounded chat
+              </p>
             </div>
           </div>
+          <span className="dash-card-badge">AI CTO</span>
+        </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "flex", flexDirection: "column", gap: "16px" }}>
-            {messages.map((msg) => (
+        {error ? (
+          <div
+            style={{
+              margin: "16px 22px 0",
+              padding: "12px 14px",
+              borderRadius: "10px",
+              background: "rgba(248,113,113,.08)",
+              border: "1px solid rgba(248,113,113,.2)",
+              color: "var(--red)",
+              fontSize: ".76rem",
+            }}
+          >
+            {error}
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "20px 22px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className="chat-msg"
+              style={{ flexDirection: message.role === "user" ? "row-reverse" : "row" }}
+            >
               <div
-                key={msg.id}
-                className="chat-msg"
-                style={{ flexDirection: msg.role === "user" ? "row-reverse" : "row" }}
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "8px",
+                  background: message.role === "assistant"
+                    ? "linear-gradient(135deg, var(--accent), var(--cyan))"
+                    : "linear-gradient(135deg, var(--purple), var(--orange))",
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: message.role === "assistant" ? "var(--bg-deepest)" : "var(--text-primary)",
+                  flexShrink: 0,
+                }}
               >
-                {msg.role === "assistant" ? (
-                  <div className="ai-avatar" style={{ width: "28px", height: "28px", borderRadius: "8px", background: "linear-gradient(135deg, var(--accent), var(--cyan))", display: "grid", placeItems: "center", fontSize: "12px", flexShrink: 0 }}>
-                    🤖
-                  </div>
-                ) : (
-                  <div style={{ width: "28px", height: "28px", borderRadius: "8px", background: "linear-gradient(135deg, var(--purple), var(--orange))", display: "grid", placeItems: "center", fontSize: "12px", fontWeight: 700, color: "var(--text-primary)", flexShrink: 0 }}>
-                    U
-                  </div>
-                )}
+                {message.role === "assistant" ? "AI" : "U"}
+              </div>
+
+              <div
+                className="msg-bubble"
+                style={{
+                  background: message.role === "user" ? "var(--accent-dim)" : "var(--bg-surface)",
+                  border: message.role === "user"
+                    ? "1px solid var(--border-glow)"
+                    : "1px solid var(--border)",
+                  borderRadius: message.role === "user"
+                    ? "10px 10px 4px 10px"
+                    : "10px 10px 10px 4px",
+                  maxWidth: "78%",
+                }}
+              >
                 <div
-                  className="msg-bubble"
                   style={{
-                    background: msg.role === "user" ? "var(--accent-dim)" : "var(--bg-surface)",
-                    border: msg.role === "user" ? "1px solid var(--border-glow)" : "1px solid var(--border)",
-                    borderRadius: msg.role === "user" ? "10px 10px 4px 10px" : "10px 10px 10px 4px",
-                    maxWidth: "70%"
+                    fontSize: ".8rem",
+                    lineHeight: 1.65,
+                    color: "var(--text-secondary)",
                   }}
                 >
-                  <p style={{ fontSize: ".82rem", lineHeight: 1.6, color: "var(--text-secondary)" }}>{msg.content}</p>
-                  <p className="msg-time">{msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => (
+                        <p style={{ margin: "0 0 8px 0" }}>{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul style={{ margin: "0 0 8px 16px", padding: 0 }}>{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol style={{ margin: "0 0 8px 16px", padding: 0 }}>{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li style={{ margin: "2px 0" }}>{children}</li>
+                      ),
+                      strong: ({ children }) => (
+                        <strong style={{ color: "var(--text-primary)", fontWeight: 600 }}>{children}</strong>
+                      ),
+                      em: ({ children }) => (
+                        <em style={{ fontStyle: "italic" }}>{children}</em>
+                      ),
+                      code: ({ className, children }) => {
+                        const isInline = !className
+                        if (isInline) {
+                          return (
+                            <code
+                              style={{
+                                background: "var(--bg-deep)",
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                fontSize: ".85em",
+                                fontFamily: "var(--font-mono)",
+                              }}
+                            >
+                              {children}
+                            </code>
+                          )
+                        }
+                        return (
+                          <code
+                            className={className}
+                            style={{
+                              display: "block",
+                              background: "var(--bg-deep)",
+                              padding: "12px 14px",
+                              borderRadius: "8px",
+                              fontSize: ".78rem",
+                              fontFamily: "var(--font-mono)",
+                              overflow: "auto",
+                              margin: "8px 0",
+                            }}
+                          >
+                            {children}
+                          </code>
+                        )
+                      },
+                      pre: ({ children }) => <>{children}</>,
+                      a: ({ href, children }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "var(--cyan)", textDecoration: "underline" }}
+                        >
+                          {children}
+                        </a>
+                      ),
+                      h1: ({ children }) => (
+                        <h1 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)", margin: "16px 0 8px 0" }}>{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", margin: "14px 0 6px 0" }}>{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--text-primary)", margin: "12px 0 4px 0" }}>{children}</h3>
+                      ),
+                      blockquote: ({ children }) => (
+                        <blockquote
+                          style={{
+                            borderLeft: "3px solid var(--accent)",
+                            margin: "8px 0",
+                            paddingLeft: "12px",
+                            color: "var(--text-muted)",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          {children}
+                        </blockquote>
+                      ),
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
-              </div>
-            ))}
-            {isTyping && (
-              <div className="chat-msg">
-                <div className="ai-avatar" style={{ width: "28px", height: "28px", borderRadius: "8px", background: "linear-gradient(135deg, var(--accent), var(--cyan))", display: "grid", placeItems: "center", fontSize: "12px", flexShrink: 0 }}>
-                  🤖
-                </div>
-                <div className="msg-bubble">
-                  <div style={{ display: "flex", gap: "4px", padding: "4px 0" }}>
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--text-muted)", animation: "dash-pulse-dot 1s ease-in-out infinite" }} />
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--text-muted)", animation: "dash-pulse-dot 1s ease-in-out 0.2s infinite" }} />
-                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--text-muted)", animation: "dash-pulse-dot 1s ease-in-out 0.4s infinite" }} />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
 
-          <div style={{ padding: "16px 22px", borderTop: "1px solid var(--border)", background: "var(--bg-deep)" }}>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input
-                type="text"
-                placeholder="Ask me anything about your DevOps pipeline..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "10px",
-                  color: "var(--text-primary)",
-                  fontSize: ".82rem",
-                  outline: "none"
-                }}
-              />
-              <button
-                onClick={handleSend}
-                className="topbar-btn primary"
-                style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: "6px" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-                Send
-              </button>
+                {message.toolResult ? (
+                  <div
+                    style={{
+                      marginTop: "12px",
+                      paddingTop: "10px",
+                      borderTop: "1px solid var(--border)",
+                      display: "flex",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span className="dash-card-badge">
+                      {message.toolResult.stats.analyzedRepositories} repos
+                    </span>
+                    <span className="dash-card-badge">
+                      {message.toolResult.stats.graphNodes} nodes
+                    </span>
+                    <span className="dash-card-badge">
+                      {message.toolResult.stats.graphEdges} edges
+                    </span>
+                  </div>
+                ) : null}
+
+                <div
+                  style={{
+                    marginTop: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <p className="msg-time">{formatTime(message.timestamp)}</p>
+                  {message.fallback ? (
+                    <span className="tag observe">fallback</span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
+
+          {isSending ? (
+            <div className="chat-msg">
+              <div
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "8px",
+                  background: "linear-gradient(135deg, var(--accent), var(--cyan))",
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "var(--bg-deepest)",
+                  flexShrink: 0,
+                }}
+              >
+                AI
+              </div>
+              <div className="msg-bubble">
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--text-muted)", animation: "dash-pulse-dot 1s ease-in-out infinite" }} />
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--text-muted)", animation: "dash-pulse-dot 1s ease-in-out .2s infinite" }} />
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--text-muted)", animation: "dash-pulse-dot 1s ease-in-out .4s infinite" }} />
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div ref={messagesEndRef} />
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-          <div className="dash-card dash-animate-in dash-delay-1">
-            <div className="dash-card-header">
-              <p className="dash-card-title">Quick Actions</p>
-            </div>
-            <div className="dash-card-body" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {quickActions.map((action, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleQuickAction(action)}
-                  style={{
-                    padding: "12px 14px",
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    fontSize: ".78rem",
-                    color: "var(--text-secondary)",
-                    transition: "all .25s"
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border-glow)"
-                    e.currentTarget.style.background = "var(--accent-dim)"
-                    e.currentTarget.style.color = "var(--text-primary)"
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border)"
-                    e.currentTarget.style.background = "var(--bg-surface)"
-                    e.currentTarget.style.color = "var(--text-secondary)"
-                  }}
-                >
-                  {action}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="dash-card dash-animate-in dash-delay-2">
-            <div className="dash-card-header">
-              <p className="dash-card-title">Capabilities</p>
-            </div>
-            <div className="dash-card-body">
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {[
-                  { icon: "🚀", title: "Deployments", desc: "Monitor & troubleshoot" },
-                  { icon: "🔧", title: "Pipeline Mgmt", desc: "Create & optimize CI/CD" },
-                  { icon: "🐛", title: "Issue Analysis", desc: "Root cause analysis" },
-                  { icon: "📊", title: "Reports", desc: "Generate insights" },
-                ].map((cap) => (
-                  <div key={cap.title} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "1.2rem" }}>{cap.icon}</span>
-                    <div>
-                      <p style={{ fontSize: ".78rem", fontWeight: 600, color: "var(--text-primary)" }}>{cap.title}</p>
-                      <p style={{ fontSize: ".65rem", color: "var(--text-muted)" }}>{cap.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="dash-card dash-animate-in dash-delay-3">
-            <div className="dash-card-header">
-              <p className="dash-card-title">Session Stats</p>
-            </div>
-            <div className="dash-card-body">
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-                <span style={{ fontSize: ".72rem", color: "var(--text-muted)" }}>Messages</span>
-                <span style={{ fontSize: ".72rem", fontWeight: 600, color: "var(--accent)", fontFamily: "var(--font-mono)" }}>{messages.length}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-                <span style={{ fontSize: ".72rem", color: "var(--text-muted)" }}>Response Time</span>
-                <span style={{ fontSize: ".72rem", fontWeight: 600, color: "var(--green)", fontFamily: "var(--font-mono)" }}>1.2s avg</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: ".72rem", color: "var(--text-muted)" }}>Model</span>
-                <span style={{ fontSize: ".72rem", fontWeight: 600, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>GPT-4</span>
-              </div>
-            </div>
+        <div
+          style={{
+            padding: "16px 22px",
+            borderTop: "1px solid var(--border)",
+            background: "var(--bg-deep)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "10px" }}>
+            <input
+              type="text"
+              placeholder="Ask about repositories, issues, workflows, or the knowledge graph"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  void sendMessage()
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: "12px 16px",
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: "10px",
+                color: "var(--text-primary)",
+                fontSize: ".82rem",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={() => void sendMessage()}
+              className="topbar-btn primary"
+              disabled={isSending}
+              style={{ padding: "12px 18px" }}
+            >
+              {isSending ? "Sending..." : "Send"}
+            </button>
           </div>
         </div>
       </div>
-    </>
+
+    </div>
   )
 }
